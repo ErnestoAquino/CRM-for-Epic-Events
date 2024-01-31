@@ -3,8 +3,18 @@ from colorama import Fore
 
 
 class ViewCLI:
-    def prompt_login(self):
-        pass
+    @staticmethod
+    def prompt_login():
+        click.clear()
+        click.secho("Welcome to Epic Events CRM!", fg="blue", bold=True)
+        click.secho("Please log in...", fg="blue", bold=True)
+        username = click.prompt(Fore.YELLOW + "Username: ")
+        password = click.prompt(Fore.YELLOW + "Password: ", hide_input=True)
+
+        return {
+            "username": username,
+            "password": password
+        }
 
     @staticmethod
     def get_data_for_register_new_collaborator():
