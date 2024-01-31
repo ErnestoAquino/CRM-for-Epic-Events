@@ -32,8 +32,10 @@ class ViewCLI:
     @staticmethod
     def print_message(message: str, color: str = "white"):
         if color == "green":
-            click.secho(message, fg = "green", bold = True)
+            click.secho(message, fg="green", bold=True)
         elif color == "red":
-            click.secho(message, fg = "red", bold = True)
+            click.secho(message, fg="red", bold=True)
         elif color == "yellow":
-            click.secho(message, fg = "yellow", bold = True)
+            click.secho(message, fg="yellow", bold=True)
+        else:
+            click.secho(message, fg="white", bold=True)
