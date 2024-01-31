@@ -18,3 +18,13 @@ class ControllerCRM:
             self.view_cli.print_message(f"Error: {e}", "red")
         except ValueError as e:
             self.view_cli.print_message(f"Error: {e}", "red")
+
+    def authenticate_collaborator(self):
+        login_data = self.view_cli.prompt_login()
+
+        try:
+            user = self.crm_services.authenticate_collaborator(**login_data)
+            self.view_cli.print_message("Logged in successfully!", "green")
+            return user
+        except ValidationError as e:
+            self.view_cli.print_message(f"Login failed: {e}", "red")
