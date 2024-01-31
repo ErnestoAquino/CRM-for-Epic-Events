@@ -2,3 +2,4 @@ env/
 .idea/
 __pycache__/
 EpicCRM/secrets.json
+.DS_Store
