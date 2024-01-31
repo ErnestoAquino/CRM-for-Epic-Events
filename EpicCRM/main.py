@@ -16,7 +16,9 @@ from controllers.ControllerCRM import ControllerCRM
 
 def main():
     controller = ControllerCRM()
-    controller.create_collaborator()
+    user = controller.authenticate_collaborator()
+    if user:
+        pass
 
 
 if __name__ == "__main__":
