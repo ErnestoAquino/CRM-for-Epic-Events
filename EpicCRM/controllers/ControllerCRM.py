@@ -1,6 +1,6 @@
-from EpicCRM.services.ServicesCRM import ServicesCRM
-
-from EpicCRM.views.ViewCLI import ViewCLI
+from django.core.exceptions import ValidationError
+from services.ServicesCRM import ServicesCRM
+from views.ViewCLI import ViewCLI
 
 
 class ControllerCRM:
@@ -14,5 +14,7 @@ class ControllerCRM:
         try:
             self.crm_services.register_collaborator(**data)
             self.view_cli.print_message("User registered successfully", "green")
+        except ValidationError as e:
+            self.view_cli.print_message(f"Error: {e}", "red")
         except ValueError as e:
             self.view_cli.print_message(f"Error: {e}", "red")
