@@ -1,10 +1,17 @@
 from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate
 
 from crm.models import Collaborator
 from crm.models import Role
 
 
 class ServicesCRM:
+    def authenticate_collaborator(self, username: str, password: str):
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            return user
+        else:
+            raise ValidationError("Incorrect username or password")
 
     def register_collaborator(self, first_name: str,
                               last_name: str,
