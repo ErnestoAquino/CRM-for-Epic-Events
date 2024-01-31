@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 
-from EpicCRM.crm.models import Collaborator
-from EpicCRM.crm.models import Role
+from crm.models import Collaborator
+from crm.models import Role
 
 
 class ServicesCRM:
