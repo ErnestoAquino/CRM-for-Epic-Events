@@ -91,3 +91,8 @@ class Collaborator(AbstractUser):
 
     role = ForeignKey(Role, on_delete=SET_NULL, null=True)
     employee_number = CharField(max_length=50, unique=True)
+
+    class Meta:
+        permissions = [
+            ("manage_collaborators", "Can create, update and delete collaborators")
+        ]
