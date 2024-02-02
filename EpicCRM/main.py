@@ -18,7 +18,7 @@ def main():
     controller = ControllerCRM()
     user = controller.authenticate_collaborator()
     if user:
-        pass
+        controller.present_main_menu(user)
 
 
 if __name__ == "__main__":
