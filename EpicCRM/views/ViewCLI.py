@@ -49,3 +49,10 @@ class ViewCLI:
             click.secho(message, fg="yellow", bold=True)
         else:
             click.secho(message, fg="white", bold=True)
+
+    @staticmethod
+    def show_main_menu(user):
+        if user.has_perm("crm.manage_collaborators"):
+            click.secho("Menu for manage collaborators", fg="green")
+        else:
+            click.secho("You do not have permission to manage collaborators", fg="red")
