@@ -28,3 +28,6 @@ class ControllerCRM:
             return user
         except ValidationError as e:
             self.view_cli.print_message(f"Login failed: {e}", "red")
+
+    def present_main_menu(self, user):
+        self.view_cli.show_main_menu(user)
