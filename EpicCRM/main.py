@@ -9,16 +9,14 @@ def setup_django():
 
 setup_django()
 
-from views.ViewCLI import ViewCLI
+from views.MainViewCLI import MainViewCLI
 from services.ServicesCRM import ServicesCRM
-from controllers.ControllerCRM import ControllerCRM
+from controllers.MainControllerCRM import MainControllerCRM
 
 
 def main():
-    controller = ControllerCRM()
-    user = controller.authenticate_collaborator()
-    if user:
-        controller.present_main_menu(user)
+    main_controller = MainControllerCRM()
+    main_controller.start()
 
 
 if __name__ == "__main__":
