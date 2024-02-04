@@ -42,4 +42,5 @@ class ServicesCRM:
                                                    role=role,
                                                    employee_number=employee_number)
         collaborator.set_password(password)
+        # TODO: Add the user to the corresponding group before saving it.
         collaborator.save()
