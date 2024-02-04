@@ -2,7 +2,7 @@ import click
 from colorama import Fore
 
 
-class ViewCLI:
+class MainViewCLI:
     @staticmethod
     def prompt_login():
         click.clear()
@@ -50,9 +50,36 @@ class ViewCLI:
         else:
             click.secho(message, fg="white", bold=True)
 
+    def show_main_menu(self, collaborator):
+        click.secho(f"Welcome to CRM Epic Events {collaborator.username}.")
+
+        # Basic options for all collaborators
+        options = {
+            "view_contracts": "View all contracts",
+            "view_all_events": "View all events"
+        }
+
+        # Add the option to manage collaborators iif the user has permission.
+        if collaborator.has_perm("crm.manage_collaborators"):
+            options = {"manage_collaborators": "Manage Collaborators", **options}
+
+        # Display the numbered options
+        for i, (code, option) in enumerate(options.items(), start=1):
+            click.secho(f"{i}. {option}", fg="green")
+
+        # Capture the user's choice
+        choice = self.get_collaborator_choice(len(options))
+
+        # Get the option code based in the choice
+        option_code = list(options.keys())[choice - 1]
+
+        return option_code
+
     @staticmethod
-    def show_main_menu(user):
-        if user.has_perm("crm.manage_collaborators"):
-            click.secho("Menu for manage collaborators", fg="green")
-        else:
-            click.secho("You do not have permission to manage collaborators", fg="red")
+    def get_collaborator_choice(limit) -> int:
+        while True:
+            choice = click.prompt("Please choose an option", type=int)
+            if 1 <= choice <= limit:
+                return choice
+            else:
+                click.secho("Invalid option. Please try again.", fg="red")
