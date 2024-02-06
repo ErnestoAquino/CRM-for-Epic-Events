@@ -1,6 +1,7 @@
 from typing import Optional
 from django.core.exceptions import ValidationError
 from crm.models import Collaborator
+from crm.models import Role
 from services.services_crm import ServicesCRM
 from views.main_view_cli import MainViewCLI
 
@@ -36,18 +37,28 @@ class MainControllerCRM:
 
     def start(self):
         collaborator = self.authenticate_collaborator()
+
+        # Verify that the collaborator objects exists.
         if collaborator is None:
             self.view_cli.print_message("We encountered a problem during the process. Please try again.", "red")
             return
 
-        option_code = self.view_cli.show_main_menu(collaborator)
-        match option_code:
-            case "manage_collaborators":
-                print("call  ManagementCollaboratorsControllerCRM")
-            case "view_contracts":
-                print("call  show_contacts")
-            case "view_clients":
-                print("call present_clients")
-            case "view_events":
-                print("call present_events")
-            case _: self.view_cli.print_message(f"Option Code: '{option_code}' not recognized", "red")
+        # Verify that collaborator's role in not null.
+        if collaborator.role is not None:
+            role_name = collaborator.role.name
+        else:
+            self.view_cli.print_message("Your account does not have a role assigned", "yellow")
+            return
+
+        match role_name:
+            case "support":
+                # TODO: Init support_role_controller and call method start
+                print("Init support_role_controller and call method start")
+            case "sales":
+                # TODO: Init sales_role_controller and call method start
+                print("Init sales_role_controller and call method start")
+            case "management":
+                # TODO: Init management_role_controller and call method star
+                print("Init management_role_controller and call method star")
+            case _:
+                self.view_cli.print_message("Your role does not have specific task assigned.", "yellow")
