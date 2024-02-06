@@ -1,8 +1,8 @@
 from typing import Optional
 from django.core.exceptions import ValidationError
 from crm.models import Collaborator
-from services.ServicesCRM import ServicesCRM
-from views.MainViewCLI import MainViewCLI
+from services.services_crm import ServicesCRM
+from views.main_view_cli import MainViewCLI
 
 
 class MainControllerCRM:
@@ -39,12 +39,15 @@ class MainControllerCRM:
         if collaborator is None:
             self.view_cli.print_message("We encountered a problem during the process. Please try again.", "red")
             return
+
         option_code = self.view_cli.show_main_menu(collaborator)
         match option_code:
             case "manage_collaborators":
                 print("call  ManagementCollaboratorsControllerCRM")
             case "view_contracts":
-                print("call  show_contacts from ManagementContactsControllerCRM")
+                print("call  show_contacts")
             case "view_clients":
-                print("call present_clients from ManagementClientsControllerCRM")
+                print("call present_clients")
+            case "view_events":
+                print("call present_events")
             case _: self.view_cli.print_message(f"Option Code: '{option_code}' not recognized", "red")

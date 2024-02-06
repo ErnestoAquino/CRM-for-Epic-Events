@@ -19,12 +19,12 @@ class MainViewCLI:
     @staticmethod
     def get_data_for_register_new_collaborator():
         click.clear()
-        click.secho("Registering new collaborator...", fg = "green", bold = True)
+        click.secho("Registering new collaborator...", fg="green", bold=True)
 
         first_name = click.prompt(Fore.YELLOW + "First Name")
         last_name = click.prompt(Fore.YELLOW + "Last Name")
         username = click.prompt(Fore.YELLOW + "Username")
-        password = click.prompt(Fore.YELLOW + "Password", hide_input = True)
+        password = click.prompt(Fore.YELLOW + "Password", hide_input=True)
         email = click.prompt(Fore.YELLOW + "Email")
         role_name = click.prompt(Fore.YELLOW + "Rol (management, sales, support")
         employee_number = click.prompt(Fore.YELLOW + "Employee Number")
@@ -56,7 +56,8 @@ class MainViewCLI:
         # Basic options for all collaborators
         options = {
             "view_contracts": "View all contracts",
-            "view_all_events": "View all events"
+            "view_events": "View all events",
+            "view_clients": "View all clients"
         }
 
         # Add the option to manage collaborators iif the user has permission.

@@ -9,9 +9,9 @@ def setup_django():
 
 setup_django()
 
-from views.MainViewCLI import MainViewCLI
-from services.ServicesCRM import ServicesCRM
-from controllers.MainControllerCRM import MainControllerCRM
+from views.main_view_cli import MainViewCLI
+from services.services_crm import ServicesCRM
+from controllers.main_controller_crm import MainControllerCRM
 
 
 def main():
