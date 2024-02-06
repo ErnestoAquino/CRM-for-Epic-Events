@@ -1,0 +1,2 @@
+class SalesRoleController:
+    pass

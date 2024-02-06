@@ -1,0 +1,2 @@
+class SupportRoleViewCli:
+    pass

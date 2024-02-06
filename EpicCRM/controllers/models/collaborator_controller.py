@@ -1,0 +1,2 @@
+class CollaboratorController:
+    pass
