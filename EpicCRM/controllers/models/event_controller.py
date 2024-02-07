@@ -1,2 +1,7 @@
+from crm.models import Collaborator
+
+
 class EventController:
-    pass
+    def __init__(self, collaborator: Collaborator):
+        self.collaborator = collaborator
+
