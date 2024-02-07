@@ -2,6 +2,7 @@ from typing import Optional
 from django.core.exceptions import ValidationError
 from crm.models import Collaborator
 from crm.models import Role
+from controllers.roles.support_role_controller import SupportRoleController
 from services.services_crm import ServicesCRM
 from views.main_view_cli import MainViewCLI
 
@@ -52,8 +53,8 @@ class MainControllerCRM:
 
         match role_name:
             case "support":
-                # TODO: Init support_role_controller and call method start
-                print("Init support_role_controller and call method start")
+                support_role_controller = SupportRoleController(collaborator)
+                support_role_controller.start()
             case "sales":
                 # TODO: Init sales_role_controller and call method start
                 print("Init sales_role_controller and call method start")
