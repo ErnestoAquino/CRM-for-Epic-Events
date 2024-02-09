@@ -1,7 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
+from django.db.models.query import QuerySet
 
 from crm.models import Collaborator
+from crm.models import Event
+from crm.models import Contract
+from crm.models import Client
 from crm.models import Role
 
 
@@ -46,3 +50,33 @@ class ServicesCRM:
         collaborator.set_password(password)
         # TODO: Add the user to the corresponding group before saving it.
         collaborator.save()
+
+    # =====================================
+    # CLIENTS SECTION
+    # =====================================
+    def get_all_clients(self) -> QuerySet[Client]:
+        try:
+            return Client.objects.all()
+        except Exception as e:
+            print(f"Error retrieving clients: {e}")
+            return Client.objects.none()
+
+    # =====================================
+    # CONTRACTS SECTION
+    # =====================================
+    def get_all_contracts(self) -> QuerySet[Contract]:
+        try:
+            return Contract.objects.all()
+        except Exception as e:
+            print(f"Error retrieving clients: {e}")
+            return Contract.objects.none()
+
+    # =====================================
+    # EVENTS SECTION
+    # =====================================
+    def get_all_events(self) -> QuerySet[Event]:
+        try:
+            return Event.objects.all()
+        except Exception as e:
+            print(f"Error retrieving events: {e}")
+            return Event.objects.none()
