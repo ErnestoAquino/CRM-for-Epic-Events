@@ -1,3 +1,5 @@
+from django.core.exceptions import PermissionDenied
+
 from crm.models import Collaborator
 
 from controllers.models.client_controller import ClientController
@@ -20,14 +22,11 @@ class SupportRoleController:
 
         match choice:
             case 1:
-                # TODO: View the list of all clients
-                pass
+                self.present_list_all_clients()
             case 2:
-                # TODO: View the list of all contracts
-                pass
+                self.present_list_all_contracts()
             case 3:
-                # TODO: View the list of all events
-                pass
+                self.present_list_all_events()
             case 4:
                 # TODO: View your assigned events
                 pass
@@ -37,3 +36,24 @@ class SupportRoleController:
             case _:
                 # TODO: Show error message to user
                 pass
+
+    def present_list_all_clients(self):
+        try:
+            clients = self.client_controller.get_all_clients()
+            self.view_cli.display_list_of_clients(clients)
+        except PermissionDenied as e:
+            self.view_cli.display_error_message(str(e))
+
+    def present_list_all_contracts(self):
+        try:
+            contracts = self.contract_controller.get_all_contracts()
+            self.view_cli.display_list_of_contracts(contracts)
+        except PermissionDenied as e:
+            self.view_cli.display_error_message(str(e))
+
+    def present_list_all_events(self):
+        try:
+            events = self.event_controller.get_all_events()
+            self.view_cli.display_list_of_events(events)
+        except PermissionDenied as e:
+            self.view_cli.display_error_message(str(e))
