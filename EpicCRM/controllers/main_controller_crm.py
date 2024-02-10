@@ -3,6 +3,9 @@ from django.core.exceptions import ValidationError
 from crm.models import Collaborator
 from crm.models import Role
 from controllers.roles.support_role_controller import SupportRoleController
+from controllers.models.client_controller import ClientController
+from controllers.models.contract_controller import ContractController
+from controllers.models.event_controller import EventController
 from services.services_crm import ServicesCRM
 from views.main_view_cli import MainViewCLI
 
@@ -53,7 +56,13 @@ class MainControllerCRM:
 
         match role_name:
             case "support":
-                support_role_controller = SupportRoleController(collaborator)
+                client_controller = ClientController(collaborator)
+                contract_controller = ContractController(collaborator)
+                event_controller = EventController(collaborator)
+                support_role_controller = SupportRoleController(collaborator,
+                                                                client_controller,
+                                                                contract_controller,
+                                                                event_controller)
                 support_role_controller.start()
             case "sales":
                 # TODO: Init sales_role_controller and call method start
