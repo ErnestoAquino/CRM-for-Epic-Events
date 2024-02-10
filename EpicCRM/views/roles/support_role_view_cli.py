@@ -166,3 +166,20 @@ class SupportRoleViewCli:
         console = Console()
         error_text = Text(error_message, style = "bold red")
         console.print(error_text)
+
+    @staticmethod
+    def display_info_message(info_message: str) -> None:
+        console = Console()
+        info_text = Text(info_message, style="bold green")
+        console.print(info_text)
+
+    @staticmethod
+    def ask_user_if_continue():
+        while True:
+            response = click.prompt("Do you want to perform another operation? (yes/no)", type=str).lower()
+            if response == "yes":
+                return True
+            elif response == "no":
+                return False
+            else:
+                click.secho("Invalid response. Please enter 'yes' or 'no'.", fg="red")
