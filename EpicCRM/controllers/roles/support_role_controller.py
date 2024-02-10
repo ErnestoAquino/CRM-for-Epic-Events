@@ -9,11 +9,15 @@ from views.roles.support_role_view_cli import SupportRoleViewCli
 
 
 class SupportRoleController:
-    def __init__(self, collaborator: Collaborator):
+    def __init__(self, collaborator: Collaborator,
+                 client_controller: ClientController,
+                 contract_controller: ContractController,
+                 event_controller: EventController):
+
         self.collaborator = collaborator
-        self.client_controller = ClientController(self.collaborator)
-        self.contract_controller = ContractController(self.collaborator)
-        self.event_controller = EventController(self.collaborator)
+        self.client_controller = client_controller
+        self.contract_controller = contract_controller
+        self.event_controller = event_controller
         self.view_cli = SupportRoleViewCli()
 
     def start(self):
@@ -36,6 +40,11 @@ class SupportRoleController:
             case _:
                 # TODO: Show error message to user
                 pass
+        continue_operation = self.view_cli.ask_user_if_continue()
+        if continue_operation:
+            self.start()
+        else:
+            self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
 
     def present_list_all_clients(self):
         try:
