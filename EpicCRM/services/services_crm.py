@@ -80,3 +80,19 @@ class ServicesCRM:
         except Exception as e:
             print(f"Error retrieving events: {e}")
             return Event.objects.none()
+
+    def get_events_for_collaborator(self, collaborator_id: int) -> QuerySet[Event]:
+        """
+        Retrieves all events attributed to a specific collaborator.
+
+        Args:
+        collaborator_id (int): The ID of the collaborator.
+
+        Returns:
+        QuerySet[Event]: A queryset of events attributed to the collaborator.
+        """
+        try:
+            return Event.objects.filter(support_contact_id=collaborator_id)
+        except Exception as e:
+            print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
+            return Event.objects.none()
