@@ -32,7 +32,7 @@ class SupportRoleController:
             case 3:
                 self.present_list_all_events()
             case 4:
-                # TODO: View your assigned events
+                self.present_events_for_collaborator()
                 pass
             case 5:
                 # TODO: Modify one of your assigned events
@@ -63,6 +63,13 @@ class SupportRoleController:
     def present_list_all_events(self):
         try:
             events = self.event_controller.get_all_events()
+            self.view_cli.display_list_of_events(events)
+        except PermissionDenied as e:
+            self.view_cli.display_error_message(str(e))
+
+    def present_events_for_collaborator(self):
+        try:
+            events = self.event_controller.get_events_for_collaborator()
             self.view_cli.display_list_of_events(events)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
