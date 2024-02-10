@@ -17,3 +17,9 @@ class EventController:
         else:
             raise PermissionDenied("You do not have permission to view the list of events.")
 
+    def get_events_for_collaborator(self):
+        if self.collaborator.has_perm("crm.view_event"):
+            return self.service.get_events_for_collaborator(self.collaborator.id)
+        else:
+            raise PermissionDenied("You do not have permission to view the events.")
+
