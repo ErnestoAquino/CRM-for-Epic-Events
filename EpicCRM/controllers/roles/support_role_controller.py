@@ -35,7 +35,7 @@ class SupportRoleController:
                 self.present_events_for_collaborator()
                 pass
             case 5:
-                # TODO: Modify one of your assigned events
+                self.modify_event_of_collaborator()
                 pass
             case _:
                 # TODO: Show error message to user
@@ -44,6 +44,7 @@ class SupportRoleController:
         if continue_operation:
             self.start()
         else:
+            self.view_cli.clear_screen()
             self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
 
     def present_list_all_clients(self):
@@ -70,6 +71,37 @@ class SupportRoleController:
     def present_events_for_collaborator(self):
         try:
             events = self.event_controller.get_events_for_collaborator()
+            # TODO: Write message if not events
             self.view_cli.display_list_of_events(events)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
+
+    def modify_event_of_collaborator(self):
+        self.view_cli.clear_screen()
+
+        try:
+            # Try to retrieve the list of events for the collaborator
+            events = self.event_controller.get_events_for_collaborator()
+            self.view_cli.display_events_for_selection(events)
+        except PermissionDenied as e:
+            # If the collaborator does not have permission, display error message and exit.
+            self.view_cli.display_error_message(str(e))
+            return
+
+        # Check if there are events assigned to the collaborator.
+        if not events:
+            self.view_cli.display_info_message("No events assigned to you for modification.")
+            return
+
+        # If there are events, proceed to display them and ask the user to choose one for modification.
+        event_ids = [event.id for event in events]
+        selected_event_id = self.view_cli.prompt_for_get_event_id(event_ids)
+
+        # Find the selected event by the user in the retrieved event list.
+        selected_event = next((event for event in events if event.id == selected_event_id), None)
+
+        if not selected_event:
+            self.view_cli.display_error_message("Selected event not found.")
+
+        self.view_cli.clear_screen()
+        self.view_cli.display_event_details(selected_event)
