@@ -96,3 +96,54 @@ class ServicesCRM:
         except Exception as e:
             print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
             return Event.objects.none()
+
+    def modify_event_by_id(self, event_id: int, **kwargs) -> Event | None:
+        """
+        Modifies an existing event with the provided data.
+
+        Args:
+            event_id (int): The ID of event to modify.
+            **kwargs: Field arguments to update in the event.
+
+        Returns:
+            Event: The modified event if operation is successful; None otherwise
+
+        """
+        try:
+            # Get event by ID
+            event = Event.objects.get(id=event_id)
+
+            # Update even fields with provided kwargs
+            for field, value in kwargs.items():
+                setattr(event, field, value)
+
+            # Save changes to the database
+            event.save()
+
+            return event  # Returns the modified event.
+        except Event.DoesNotExist:
+            # TODO: Sentry
+            print(f"No event found with id: {event_id}")
+            return None
+        except Exception as e:
+            # TODO: Sentry
+            print(f"Error modifying event {event_id}: {e}")
+            return None
+
+    def get_event_by_id(self, event_id: int) -> Event | None:
+        """
+        Retrieve an event by ID.
+
+        Args:
+            event_id (int): The ID of the event to retrieve.
+        Returns:
+            Event if found; None otherwise.
+        """
+        try:
+            return Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            print(f"No event found with id: {event_id}")
+            return None
+        except Exception as e:
+            print(f"Error retrieving event {event_id}: {e}")
+            return None
