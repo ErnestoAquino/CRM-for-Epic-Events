@@ -1,3 +1,4 @@
+import rich.box
 from django.db.models.query import QuerySet
 
 import click
@@ -9,6 +10,7 @@ from colorama import Style
 
 from crm.models import Collaborator
 from crm.models import Client
+from crm.models import Event
 
 
 class SupportRoleViewCli:
@@ -48,13 +50,12 @@ class SupportRoleViewCli:
             else:
                 click.secho("Invalid option. Please try again.", fg="red")
 
-    @staticmethod
-    def display_list_of_clients(clients_queryset: QuerySet) -> None:
+    def display_list_of_clients(self, clients_queryset: QuerySet) -> None:
         # Create console instance.
         console = Console()
 
         # Create table
-        table = Table(show_header=True, header_style="bold magenta")
+        table = Table(title="List of all Clients", show_header=True, header_style="bold magenta")
         table.add_column("Full Name", style = "dim", width = 20)
         table.add_column("Email", style = "dim", width = 20)
         table.add_column("Phone", justify = "right", style = "dim", width = 12)
@@ -72,22 +73,21 @@ class SupportRoleViewCli:
             )
 
         # Print the table using Rich
-        console.print(table)
+        console.print(table, justify="center")
 
-    @staticmethod
-    def display_list_of_contracts(contracts_queryset: QuerySet) -> None:
+    def display_list_of_contracts(self, contracts_queryset: QuerySet) -> None:
         # Create console instance.
         console = Console()
 
         # Create table
-        table = Table(show_header = True, header_style = "bold magenta")
-        table.add_column("ID", style = "dim", width = 10)
-        table.add_column("Client Name", style = "dim", width = 20)
-        table.add_column("Sales Contact", style = "dim", width = 20)
-        table.add_column("Total Amount", justify = "right", style = "dim", width = 12)
-        table.add_column("Amount Remaining", justify = "right", style = "dim", width = 15)
-        table.add_column("Creation Date", style = "dim", width = 20)
-        table.add_column("Status", style = "dim", width = 15)
+        table = Table(title="List of all Contracts", show_header=True, header_style="bold magenta")
+        table.add_column("ID", style="dim", width=10)
+        table.add_column("Client Name", style="dim", width=20)
+        table.add_column("Sales Contact", style="dim", width=20)
+        table.add_column("Total Amount", justify="right", style="dim", width=12)
+        table.add_column("Amount Remaining", justify="right", style="dim", width=15)
+        table.add_column("Creation Date", style="dim", width=20)
+        table.add_column("Status", style="dim", width=15)
 
         # Fill the table with contracts' data
         for contract in contracts_queryset:
@@ -114,23 +114,22 @@ class SupportRoleViewCli:
         # Print the table using Rich
         console.print(table)
 
-    @staticmethod
-    def display_list_of_events(events_queryset: QuerySet) -> None:
+    def display_list_of_events(self, events_queryset: QuerySet) -> None:
         # Create console instance.
         console = Console()
 
         # Create table
-        table = Table(show_header = True, header_style = "bold magenta")
-        table.add_column("ID", style="dim", width = 10)
-        table.add_column("Contract ID", style = "dim", width = 12)
+        table = Table(title="List of all Events", show_header=True, header_style="bold magenta")
+        table.add_column("ID", style="dim", width=10)
+        table.add_column("Contract ID", style="dim", width=12)
         table.add_column("Name", style="dim", width=12)
-        table.add_column("Client Name", style = "dim", width = 20)
-        table.add_column("Support Contact", style = "dim", width = 20)
-        table.add_column("Start Date", style = "dim", width = 20)
-        table.add_column("End Date", style = "dim", width = 20)
-        table.add_column("Location", style = "dim", width = 25)
-        table.add_column("Attendees", justify = "right", style = "dim", width = 12)
-        table.add_column("Notes", style = "dim", width = 30)
+        table.add_column("Client Name", style="dim", width=20)
+        table.add_column("Support Contact", style="dim", width=20)
+        table.add_column("Start Date", style="dim", width=20)
+        table.add_column("End Date", style="dim", width=20)
+        table.add_column("Location", style="dim", width=25)
+        table.add_column("Attendees", justify="right", style="dim", width=12)
+        table.add_column("Notes", style="dim", width=30)
 
         # Fill the table with events' data
         for event in events_queryset:
@@ -161,10 +160,57 @@ class SupportRoleViewCli:
         # Print the table using Rich
         console.print(table)
 
+    def display_events_for_selection(self, events_queryset: QuerySet) -> None:
+        # Create console instance
+        console = Console()
+
+        # Create table
+        table = Table(title="List of Available Events", show_header=True, header_style="bold magenta")
+        table.add_column("ID", style="dim", width=10)
+        table.add_column("Name", style="dim", width=20)
+        table.add_column("Client Name", style="dim", width=20)
+
+        # Fill the table with events data
+        for event in events_queryset:
+            event_name = event.name if event.name else "No Name"
+            client_name = event.client_name
+
+            table.add_row(
+                str(event.id),
+                event_name,
+                client_name
+            )
+
+        # Print the table using Rich
+        console.print(table)
+
+    def display_event_details(self, event: Event):
+        console = Console()
+
+        # Create a table to display event details
+        table = Table(title="Event Detail", show_header=True, header_style="bold blue")
+        table.add_column("Field", style="dim", width=20)
+        table.add_column("Value", width=40)
+
+        # Add rows to the table with event details
+        table.add_row("Event ID", str(event.id))
+        table.add_row("Name", event.name)
+        table.add_row("Client Name", event.client_name)
+        table.add_row("Client Contact", event.client_contact or "N/A")
+        table.add_row("Start Date", event.start_date.strftime("%Y-%m-%d %H:%M"))
+        table.add_row("End Date", event.end_date.strftime("%Y-%m-%d %H:%M"))
+        table.add_row("Location", event.location)
+        table.add_row("Attendees", str(event.attendees))
+        table.add_row("Support Contact", event.support_contact.get_full_name() if event.support_contact else "N/A")
+        table.add_row("Notes", event.notes or "N/A")
+
+        # Print the table
+        console.print(table)
+
     @staticmethod
     def display_error_message(error_message: str) -> None:
         console = Console()
-        error_text = Text(error_message, style = "bold red")
+        error_text = Text(error_message, style="bold red")
         console.print(error_text)
 
     @staticmethod
@@ -172,6 +218,12 @@ class SupportRoleViewCli:
         console = Console()
         info_text = Text(info_message, style="bold green")
         console.print(info_text)
+
+    @staticmethod
+    def display_message(message: str) -> None:
+        console = Console()
+        message_text = Text(message, style="bold magenta")
+        console.print(message_text)
 
     @staticmethod
     def ask_user_if_continue():
@@ -183,3 +235,25 @@ class SupportRoleViewCli:
                 return False
             else:
                 click.secho("Invalid response. Please enter 'yes' or 'no'.", fg="red")
+
+    @staticmethod
+    def clear_screen() -> None:
+        click.clear()
+
+    @staticmethod
+    def prompt_for_get_event_id(events_id: [int]) -> int:
+        while True:
+            event_id = click.prompt("Please enter the ID of event you wish to modify", type=int)
+            if event_id in events_id:
+                return event_id
+            else:
+                click.secho("Invalid event ID. Please choose from the list", fg="red")
+
+    @staticmethod
+    def prompt_for_event_selection(events: QuerySet[Event]) -> Event:
+        event_ids = [event.id for event in events]
+        event_id = click.prompt("Please enter the ID of event you wish to modify", type=int)
+        if event_id in event_ids:
+            return event_id
+        else:
+            click.secho("Invalid event ID. Please choose from the list", fg="red")
