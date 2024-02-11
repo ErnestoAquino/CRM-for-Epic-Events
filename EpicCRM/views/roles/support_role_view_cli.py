@@ -55,7 +55,7 @@ class SupportRoleViewCli:
         console = Console()
 
         # Create table
-        table = Table(title="List of all Clients", show_header=True, header_style="bold magenta")
+        table = Table(title="List of all Clients", show_header=True, header_style="bold magenta", expand=True)
         table.add_column("Full Name", style = "dim", width = 20)
         table.add_column("Email", style = "dim", width = 20)
         table.add_column("Phone", justify = "right", style = "dim", width = 12)
@@ -73,14 +73,14 @@ class SupportRoleViewCli:
             )
 
         # Print the table using Rich
-        console.print(table, justify="center")
+        console.print(table)
 
     def display_list_of_contracts(self, contracts_queryset: QuerySet) -> None:
         # Create console instance.
         console = Console()
 
         # Create table
-        table = Table(title="List of all Contracts", show_header=True, header_style="bold magenta")
+        table = Table(title="List of all Contracts", show_header=True, header_style="bold magenta", expand=True)
         table.add_column("ID", style="dim", width=10)
         table.add_column("Client Name", style="dim", width=20)
         table.add_column("Sales Contact", style="dim", width=20)
@@ -119,7 +119,7 @@ class SupportRoleViewCli:
         console = Console()
 
         # Create table
-        table = Table(title="List of all Events", show_header=True, header_style="bold magenta")
+        table = Table(title="List of all Events", show_header=True, header_style="bold magenta", expand=True)
         table.add_column("ID", style="dim", width=10)
         table.add_column("Contract ID", style="dim", width=12)
         table.add_column("Name", style="dim", width=12)
@@ -165,7 +165,7 @@ class SupportRoleViewCli:
         console = Console()
 
         # Create table
-        table = Table(title="List of Available Events", show_header=True, header_style="bold magenta")
+        table = Table(title="List of Available Events", show_header=True, header_style="bold magenta", expand=True)
         table.add_column("ID", style="dim", width=10)
         table.add_column("Name", style="dim", width=20)
         table.add_column("Client Name", style="dim", width=20)
@@ -205,7 +205,7 @@ class SupportRoleViewCli:
         table.add_row("Notes", event.notes or "N/A")
 
         # Print the table
-        console.print(table)
+        console.print(table, justify="center")
 
     @staticmethod
     def display_error_message(error_message: str) -> None:
