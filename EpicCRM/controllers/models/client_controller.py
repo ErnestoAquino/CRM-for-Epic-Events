@@ -5,9 +5,9 @@ from services.services_crm import ServicesCRM
 
 
 class ClientController:
-    def __init__(self, collaborator: Collaborator):
+    def __init__(self, collaborator: Collaborator, services: ServicesCRM):
         self.collaborator = collaborator
-        self.services = ServicesCRM()
+        self.services = services
 
     def get_all_clients(self):
         if self.collaborator.has_perm("crm.view_client"):
