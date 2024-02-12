@@ -1,6 +1,7 @@
 from django.core.exceptions import PermissionDenied
 
 from crm.models import Collaborator
+from crm.models import Event
 
 from controllers.models.client_controller import ClientController
 from controllers.models.contract_controller import ContractController
@@ -33,19 +34,21 @@ class SupportRoleController:
                 self.present_list_all_events()
             case 4:
                 self.present_events_for_collaborator()
-                pass
             case 5:
-                self.modify_event_of_collaborator()
-                pass
+                self.start_modification_process()
+            case 6:
+                self.exit_of_crm_system()
+                return
             case _:
-                # TODO: Show error message to user
-                pass
+                self.view_cli.display_error_message("Invalid option selected. Please try again.")
+                self.start()
+
         continue_operation = self.view_cli.ask_user_if_continue()
-        if continue_operation:
-            self.start()
-        else:
-            self.view_cli.clear_screen()
-            self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
+        if not continue_operation:
+            self.exit_of_crm_system()
+            return
+
+        self.start()
 
     def present_list_all_clients(self):
         try:
@@ -76,7 +79,11 @@ class SupportRoleController:
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
 
-    def modify_event_of_collaborator(self):
+    def exit_of_crm_system(self):
+        self.view_cli.clear_screen()
+        self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
+
+    def get_event_for_modification(self) -> Event | None:
         self.view_cli.clear_screen()
 
         try:
@@ -86,12 +93,12 @@ class SupportRoleController:
         except PermissionDenied as e:
             # If the collaborator does not have permission, display error message and exit.
             self.view_cli.display_error_message(str(e))
-            return
+            return None
 
         # Check if there are events assigned to the collaborator.
         if not events:
             self.view_cli.display_info_message("No events assigned to you for modification.")
-            return
+            return None
 
         # If there are events, proceed to display them and ask the user to choose one for modification.
         event_ids = [event.id for event in events]
@@ -100,8 +107,32 @@ class SupportRoleController:
         # Find the selected event by the user in the retrieved event list.
         selected_event = next((event for event in events if event.id == selected_event_id), None)
 
+        # If the selected event is not found, inform the user.
         if not selected_event:
             self.view_cli.display_error_message("Selected event not found.")
+            return None
 
+        return selected_event
+
+    def modify_event(self, event: Event) -> None:
         self.view_cli.clear_screen()
-        self.view_cli.display_event_details(selected_event)
+        self.view_cli.display_event_details(event)
+
+        modifications = self.view_cli.prompt_for_event_modification()
+        if not modifications:
+            self.view_cli.display_info_message("No modifications were made.")
+            return
+
+        for field, value in modifications.items():
+            setattr(event, field, value)
+        event.save()
+        self.view_cli.display_info_message("Event updated successfully.")
+
+    def start_modification_process(self):
+        selected_event = self.get_event_for_modification()
+
+        if not selected_event:
+            self.view_cli.display_info_message("Modification process cancelled.")
+            return
+
+        self.modify_event(selected_event)
