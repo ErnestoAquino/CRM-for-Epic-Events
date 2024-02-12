@@ -41,6 +41,7 @@ class MainControllerCRM:
 
     def start(self):
         collaborator = self.authenticate_collaborator()
+        services = ServicesCRM()
 
         # Verify that the collaborator objects exists.
         if collaborator is None:
@@ -56,9 +57,9 @@ class MainControllerCRM:
 
         match role_name:
             case "support":
-                client_controller = ClientController(collaborator)
-                contract_controller = ContractController(collaborator)
-                event_controller = EventController(collaborator)
+                client_controller = ClientController(collaborator, services)
+                contract_controller = ContractController(collaborator, services)
+                event_controller = EventController(collaborator, services)
                 support_role_controller = SupportRoleController(collaborator,
                                                                 client_controller,
                                                                 contract_controller,
