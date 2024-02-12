@@ -53,6 +53,9 @@ class SupportRoleController:
     def present_list_all_clients(self):
         try:
             clients = self.client_controller.get_all_clients()
+            if not clients:
+                self.view_cli.display_info_message("No clients available.")
+                return
             self.view_cli.display_list_of_clients(clients)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
@@ -60,6 +63,9 @@ class SupportRoleController:
     def present_list_all_contracts(self):
         try:
             contracts = self.contract_controller.get_all_contracts()
+            if not contracts:
+                self.view_cli.display_info_message("No contracts available.")
+                return
             self.view_cli.display_list_of_contracts(contracts)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
@@ -67,6 +73,9 @@ class SupportRoleController:
     def present_list_all_events(self):
         try:
             events = self.event_controller.get_all_events()
+            if not events:
+                self.view_cli.display_info_message("No events available.")
+                return
             self.view_cli.display_list_of_events(events)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
@@ -74,7 +83,8 @@ class SupportRoleController:
     def present_events_for_collaborator(self):
         try:
             events = self.event_controller.get_events_for_collaborator()
-            # TODO: Write message if not events
+            if not events:
+                self.view_cli.display_info_message("No events assigned to you.")
             self.view_cli.display_list_of_events(events)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
