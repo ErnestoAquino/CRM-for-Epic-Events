@@ -24,8 +24,11 @@ class SupportRoleController:
     def start(self):
         print(f"Hi! {self.collaborator.get_full_name()}")
 
-        # Shows the main menu to the collaborator and captures their choice.
-        choice = self.view_cli.show_main_menu(collaborator=self.collaborator)
+        # Shows the main menu to the collaborator
+        self.view_cli.show_main_menu(collaborator=self.collaborator)
+
+        # captures their choice.
+        choice = self.view_cli.get_user_menu_choice
 
         match choice:
             case 1:
