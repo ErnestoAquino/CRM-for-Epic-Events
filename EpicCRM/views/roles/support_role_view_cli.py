@@ -30,7 +30,7 @@ class SupportRoleViewCli(BaseViewCli):
     ]
     MENU_LIMIT = len(MENU_OPTIONS)
 
-    def show_main_menu(self, collaborator: Collaborator) -> int:
+    def show_main_menu(self, collaborator: Collaborator) -> None:
         self.clear_screen()
         console = Console()
 
@@ -55,6 +55,7 @@ class SupportRoleViewCli(BaseViewCli):
         # Print table (menu options)
         console.print(table)
 
+    def get_user_menu_choice(self) -> int:
         # Capture user choice
         choice = self.get_collaborator_choice(limit=self.MENU_LIMIT)
 
