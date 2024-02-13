@@ -30,18 +30,23 @@ class SupportRoleController:
         match choice:
             case 1:
                 # Presents the list of all clients.
+                self.view_cli.clear_screen()
                 self.present_list_all_clients()
             case 2:
                 # Presents the list of all contracts.
+                self.view_cli.clear_screen()
                 self.present_list_all_contracts()
             case 3:
                 # Presents the list of all events.
+                self.view_cli.clear_screen()
                 self.present_list_all_events()
             case 4:
                 # Presents events assigned to the collaborator.
+                self.view_cli.clear_screen()
                 self.present_events_for_collaborator()
             case 5:
                 # Initiates the modification process for an event.
+                self.view_cli.clear_screen()
                 self.start_modification_process()
             case 6:
                 # Exits the CRM system.
@@ -115,7 +120,7 @@ class SupportRoleController:
             events = self.event_controller.get_events_for_collaborator()
             if not events:
                 self.view_cli.display_info_message("No events assigned to you.")
-            self.view_cli.display_list_of_events(events)
+            self.view_cli.display_list_events_for_collaborator(events, collaborator=self.collaborator)
         except PermissionDenied as e:
             self.view_cli.display_error_message(str(e))
 
@@ -142,7 +147,7 @@ class SupportRoleController:
 
         # If there are events, proceed to display them and ask the user to choose one for modification.
         event_ids = [event.id for event in events]
-        selected_event_id = self.view_cli.prompt_for_get_event_id(event_ids)
+        selected_event_id = self.view_cli.prompt_for_selection_by_id(event_ids, "Event")
 
         # Find the selected event by the user in the retrieved event list.
         selected_event = next((event for event in events if event.id == selected_event_id), None)
