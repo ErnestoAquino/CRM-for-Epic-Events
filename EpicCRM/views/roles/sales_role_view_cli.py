@@ -174,3 +174,57 @@ class SalesRoleViewCli(BaseViewCli):
 
         # Print the table
         console.print(table, justify="center")
+
+    def prompt_for_client_modification(self) -> dict:
+        modifications = {}
+        self.display_info_message("Leave blank any field you do not wish to modify.")
+
+        # Full Name Modification
+        while True:
+            new_full_name = click.prompt("New Full Name (max 100 characters)",
+                                         default = "",
+                                         show_default = False).strip()
+            if not new_full_name:
+                break
+            if len(new_full_name) > 100:
+                self.display_error_message("Full Name must not exceed 100 characters. Please try again.")
+                continue
+            modifications["full_name"] = new_full_name
+            break
+
+        # Email Modification
+        while True:
+            new_email = click.prompt("New Email", default = "", show_default = False).strip()
+            if not new_email:
+                break
+            if not re.fullmatch(self.EMAIL_REGEX, new_email):
+                self.display_error_message(
+                    "Invalid email format. Please enter a valid email address, such as example@domain.com.")
+                continue
+            modifications["email"] = new_email
+            break
+
+        # Phone Number Modification
+        while True:
+            new_phone = click.prompt("New Phone number (max 20 characters)", default = "", show_default = False).strip()
+            if not new_phone:
+                break
+            if len(new_phone) > 20:
+                self.display_error_message("Phone number must not exceed 20 characters. Please try again.")
+                continue
+            modifications["phone"] = new_phone
+            break
+
+        # Company Name Modification
+        while True:
+            new_company_name = click.prompt("New Company name (max 100 characters)", default = "",
+                                            show_default = False).strip()
+            if not new_company_name:
+                break
+            if len(new_company_name) > 100:
+                self.display_error_message("Company name must not exceed 100 characters. Please try again.")
+                continue
+            modifications["company_name"] = new_company_name
+            break
+
+        return modifications
