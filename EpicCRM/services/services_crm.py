@@ -51,9 +51,48 @@ class ServicesCRM:
         # TODO: Add the user to the corresponding group before saving it.
         collaborator.save()
 
-    # =====================================
-    # CLIENTS SECTION
-    # =====================================
+    # ===================================== CLIENTS SECTION =====================================
+    @staticmethod
+    def create_client(full_name: str,
+                      email: str,
+                      phone: str,
+                      company_name: str,
+                      sales_contact: Collaborator):
+
+        # Check if email is already in use.
+        if Client.objects.filter(email=email).exists():
+            raise ValidationError(f"The {email} is already in use.")
+
+        # Create the new client
+        client = Client(
+            full_name=full_name,
+            email=email,
+            phone=phone,
+            company_name=company_name,
+            sales_contact=sales_contact
+        )
+
+        # Saves the new client to the database
+        client.save()
+
+        return client
+
+    def get_clients_for_collaborator(self, collaborator_id: int) -> QuerySet[Event]:
+        """
+        Retrieves all clients attributed to a specific sales contact.
+
+        Args:
+        sales_contact_id (int): The ID of the sales contact.
+
+        Returns:
+        QuerySet[Client]: A queryset of clients attributed to the sales contact.
+        """
+        try:
+            return Client.objects.filter(sales_contact_id=collaborator_id)
+        except Exception as e:
+            print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
+            return Client.objects.none()
+
     def get_all_clients(self) -> QuerySet[Client]:
         try:
             return Client.objects.all()
@@ -61,9 +100,7 @@ class ServicesCRM:
             print(f"Error retrieving clients: {e}")
             return Client.objects.none()
 
-    # =====================================
-    # CONTRACTS SECTION
-    # =====================================
+    # ===================================== CONTRACTS SECTION =====================================
     def get_all_contracts(self) -> QuerySet[Contract]:
         try:
             return Contract.objects.all()
@@ -71,9 +108,7 @@ class ServicesCRM:
             print(f"Error retrieving clients: {e}")
             return Contract.objects.none()
 
-    # =====================================
-    # EVENTS SECTION
-    # =====================================
+    # ===================================== EVENTS SECTION =====================================
     def get_all_events(self) -> QuerySet[Event]:
         try:
             return Event.objects.all()
