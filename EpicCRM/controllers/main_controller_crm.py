@@ -1,13 +1,20 @@
 from typing import Optional
 from django.core.exceptions import ValidationError
+
 from crm.models import Collaborator
 from crm.models import Role
+
 from controllers.roles.support_role_controller import SupportRoleController
+from controllers.roles.sales_role_controller import SalesRoleController
 from controllers.models.client_controller import ClientController
 from controllers.models.contract_controller import ContractController
 from controllers.models.event_controller import EventController
+
 from services.services_crm import ServicesCRM
+
 from views.main_view_cli import MainViewCLI
+from views.roles.support_role_view_cli import SupportRoleViewCli
+from views.roles.sales_role_view_cli import SalesRoleViewCli
 
 
 class MainControllerCRM:
@@ -60,14 +67,28 @@ class MainControllerCRM:
                 client_controller = ClientController(collaborator, services)
                 contract_controller = ContractController(collaborator, services)
                 event_controller = EventController(collaborator, services)
+                view_cli = SupportRoleViewCli()
+
                 support_role_controller = SupportRoleController(collaborator,
                                                                 client_controller,
                                                                 contract_controller,
-                                                                event_controller)
+                                                                event_controller,
+                                                                view_cli)
                 support_role_controller.start()
             case "sales":
-                # TODO: Init sales_role_controller and call method start
-                print("Init sales_role_controller and call method start")
+                client_controller = ClientController(collaborator, services)
+                contract_controller = ContractController(collaborator, services)
+                event_controller = EventController(collaborator, services)
+                view_cli = SalesRoleViewCli()
+                services_crm = ServicesCRM()
+
+                sales_role_controller = SalesRoleController(collaborator,
+                                                            services_crm,
+                                                            client_controller,
+                                                            contract_controller,
+                                                            event_controller,
+                                                            view_cli)
+                sales_role_controller.start()
             case "management":
                 # TODO: Init management_role_controller and call method star
                 print("Init management_role_controller and call method star")
