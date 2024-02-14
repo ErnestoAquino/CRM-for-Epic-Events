@@ -58,7 +58,7 @@ class BaseViewCli:
         console.print(message_text)
 
     @staticmethod
-    def display_yellow_message(message: str) -> None:
+    def display_warning_message(message: str) -> None:
         console = Console()
         message_text = Text(message, style="bold yellow")
         console.print(message_text)
