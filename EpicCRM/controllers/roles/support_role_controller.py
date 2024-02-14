@@ -13,22 +13,23 @@ class SupportRoleController:
     def __init__(self, collaborator: Collaborator,
                  client_controller: ClientController,
                  contract_controller: ContractController,
-                 event_controller: EventController):
+                 event_controller: EventController,
+                 view_cli: SupportRoleViewCli):
 
         self.collaborator = collaborator
         self.client_controller = client_controller
         self.contract_controller = contract_controller
         self.event_controller = event_controller
-        self.view_cli = SupportRoleViewCli()
+        self.view_cli = view_cli
 
     def start(self):
-        print(f"Hi! {self.collaborator.get_full_name()}")
+        self.view_cli.display_info_message(f"Hi! {self.collaborator.get_full_name()}")
 
         # Shows the main menu to the collaborator
         self.view_cli.show_main_menu(collaborator=self.collaborator)
 
         # captures their choice.
-        choice = self.view_cli.get_user_menu_choice
+        choice = self.view_cli.get_user_menu_choice()
 
         match choice:
             case 1:
