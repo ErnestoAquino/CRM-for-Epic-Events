@@ -101,14 +101,14 @@ class SalesRoleController:
         if not selected_client:
             self.view_cli.display_warning_message("Modification process cancelled.")
             return
-        self.view_cli.display_client_details(selected_client)
+        self.modify_client(selected_client)
 
     def get_client_for_modification(self) -> Client | None:
         self.view_cli.clear_screen()
 
         if not self.collaborator.has_perm("crm.view_client"):
             self.view_cli.display_error_message("You do not have permission to view the clients")
-            return
+            return None
 
         try:
             clients = self.services_crm.get_clients_for_collaborator(self.collaborator.id)
@@ -131,6 +131,30 @@ class SalesRoleController:
             return None
 
         return selected_client
+
+    def modify_client(self, client: Client) -> None:
+        # Clears the screen before proceeding.
+        self.view_cli.clear_screen()
+
+        # Displays the details of the client to be modified.
+        self.view_cli.display_client_details(client)
+        modifications = self.view_cli.prompt_for_client_modification()
+
+        # Checks if no modifications were provided.
+        if not modifications:
+            # Informs the user that no modifications were made and exits.
+            self.view_cli.display_info_message("No modifications were made.")
+            return
+
+        # Applies the modifications to the client object.
+        for field, value in modifications.items():
+            setattr(client, field, value)
+
+        # Saves the modified client.
+        client.save()
+
+        # Informs the client was updated successfully.
+        self.view_cli.display_info_message("Client updated successfully.")
 
     # ================== 6 - View the list of all clients.   ===============
     def present_list_all_clients(self):
