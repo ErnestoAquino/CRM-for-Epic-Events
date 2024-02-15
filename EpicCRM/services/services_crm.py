@@ -101,6 +101,15 @@ class ServicesCRM:
             return Client.objects.none()
 
     # ===================================== CONTRACTS SECTION =====================================
+    def get_contracts_for_collaborator(self, collaborator_id: int) -> QuerySet[Contract]:
+        try:
+            clients = self.get_clients_for_collaborator(collaborator_id)
+            contracts = Contract.objects.filter(client__in=clients)
+            return contracts
+        except Exception as e:
+            print(f"Error retrieving contracts for collaborator {collaborator_id}: {e}")
+            return Contract.objects.none()
+
     def get_all_contracts(self) -> QuerySet[Contract]:
         try:
             return Contract.objects.all()
