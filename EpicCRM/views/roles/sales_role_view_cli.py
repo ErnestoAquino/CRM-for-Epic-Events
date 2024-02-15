@@ -307,7 +307,7 @@ class SalesRoleViewCli(BaseViewCli):
         while True:
             new_amount_remaining_str = click.prompt("New Amount Remaining (e.g., 9999.99)", default = "",
                                                     show_default = False).strip()
-            if not new_amount_remaining_str:  # El usuario presionó Enter sin introducir ningún valor
+            if not new_amount_remaining_str:
                 break
             try:
                 new_amount_remaining = float(new_amount_remaining_str)
@@ -333,3 +333,36 @@ class SalesRoleViewCli(BaseViewCli):
             break
 
         return modifications
+
+    def get_contract_filter_choices(self) -> int:
+        """
+        Shows contract filter options and returns the user's choice as an integer.
+        """
+        self.clear_screen()
+        console = Console()
+
+        # Contract filtering options
+        filter_options = [
+            "1 - View all contracts of your clients.",
+            "2 - View all unpaid contracts of your clients.",
+            "3 - View all unsigned contracts of your clients."
+        ]
+
+        # Create a table for the menu options.
+        table = Table(show_header=True,
+                      header_style="bold magenta")
+
+        table.add_column("Filter Options",
+                         justify="left",
+                         style="dim")
+
+        # Add menu options to the table
+        for option in filter_options:
+            table.add_row(option)
+
+        # Display filtering options to the user
+        console.print(table, justify="center")
+
+        choice = self.get_collaborator_choice(limit=len(filter_options))
+
+        return choice
