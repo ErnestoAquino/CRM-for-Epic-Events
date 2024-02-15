@@ -7,6 +7,7 @@ from rich.table import Table
 from views.base_view_cli import BaseViewCli
 
 from crm.models import Client
+from crm.models import Contract
 
 
 class SalesRoleViewCli(BaseViewCli):
@@ -22,6 +23,7 @@ class SalesRoleViewCli(BaseViewCli):
         "9 - Exit the CRM system."
     ]
     MENU_LIMIT = len(MENU_OPTIONS)
+    VALID_STATUS_CHOICES = ["signed", "not_signed"]
 
     # EMAIL_REGEX Explanation:
     # This regular expression is used to validate email addresses based on specific criteria:
@@ -136,6 +138,7 @@ class SalesRoleViewCli(BaseViewCli):
         return client_data
 
     def display_clients_for_selection(self, clients_queryset: QuerySet) -> None:
+        self.clear_screen()
         # Create console instance
         console = Console()
 
@@ -157,6 +160,7 @@ class SalesRoleViewCli(BaseViewCli):
         console.print(table)
 
     def display_client_details(self, client: Client) -> None:
+        self.clear_screen()
         console = Console()
 
         # Create a table to display client details
@@ -225,6 +229,107 @@ class SalesRoleViewCli(BaseViewCli):
                 self.display_error_message("Company name must not exceed 100 characters. Please try again.")
                 continue
             modifications["company_name"] = new_company_name
+            break
+
+        return modifications
+
+    def display_contracts_for_selection(self, contracts_queryset: QuerySet) -> None:
+        self.clear_screen()
+        # Create console instance
+        console = Console()
+
+        # Create table
+        table = Table(title="List of Available Contracts", show_header=True, header_style="bold magenta",
+                      expand=True)
+        table.add_column("Contract ID", style="dim", width=12)
+        table.add_column("Client Name", width=20)
+        table.add_column("Status", width=12)
+
+        # Fill the table with contracts data
+        for contract in contracts_queryset:
+            client_name = contract.client.full_name if contract.client.full_name else "No Name"
+            status = contract.get_status_display()
+
+            table.add_row(
+                str(contract.id),
+                client_name,
+                status
+            )
+
+        # Print the table using Rich
+        console.print(table)
+
+    def display_contract_details(self, contract: Contract) -> None:
+        console = Console()
+
+        # Create a table to display contract details
+        table = Table(title="Contract Detail",
+                      show_header=True,
+                      header_style="bold blue",
+                      show_lines=True)
+
+        table.add_column("Field", style="dim", width=20)
+        table.add_column("Value", width=40)
+
+        # Add rows to the table with contract details
+        table.add_row("Contract ID", str(contract.id))
+        table.add_row("Client Information", contract.client.full_name + " - " + contract.client.email)
+        table.add_row("Sales Contact", contract.sales_contact.get_full_name() if contract.sales_contact else "N/A")
+        table.add_row("Total Amount", str(contract.total_amount))
+        table.add_row("Amount Remaining", str(contract.amount_remaining))
+        table.add_row("Creation Date", contract.creation_date.strftime("%Y-%m-%d"))
+        table.add_row("Status", "Signed" if contract.status == "signed" else "Not Signed")
+
+        console.print(table, justify="center")
+
+    def prompt_for_contract_modification(self) -> dict:
+        modifications = {}
+        self.display_info_message("Leave blank any field you do not wish to modify.")
+
+        # Total amount modification
+        while True:
+            new_total_amount_str = click.prompt("New Total Amount (e.g., 9999.99)", default = "",
+                                                show_default = False).strip()
+            if not new_total_amount_str:
+                break
+            try:
+                new_total_amount = float(new_total_amount_str)
+                if new_total_amount <= 0:
+                    self.display_error_message("Invalid total amount. Please enter a positive number.")
+                    continue
+                modifications["total_amount"] = "{:.2f}".format(new_total_amount)
+                break
+            except ValueError:
+                self.display_error_message("Please enter a valid number.")
+                continue
+
+        # Amount Remaining Modification
+        while True:
+            new_amount_remaining_str = click.prompt("New Amount Remaining (e.g., 9999.99)", default = "",
+                                                    show_default = False).strip()
+            if not new_amount_remaining_str:  # El usuario presionó Enter sin introducir ningún valor
+                break
+            try:
+                new_amount_remaining = float(new_amount_remaining_str)
+                if new_amount_remaining < 0:
+                    self.display_error_message("Invalid amount remaining. Please enter a non-negative number.")
+                    continue
+                modifications["amount_remaining"] = "{:.2f}".format(new_amount_remaining)
+                break
+            except ValueError:
+                self.display_error_message("Please enter a valid number.")
+                continue
+
+        # Status Modification
+        while True:
+            new_status = click.prompt("New Status (Options: signed, not_signed)", default="",
+                                      show_default=False).strip().lower()
+            if not new_status:
+                break
+            if new_status not in self.VALID_STATUS_CHOICES:
+                self.display_error_message("Invalid status. Please choose a valid status: signed or not_signed.")
+                continue
+            modifications["status"] = new_status
             break
 
         return modifications
