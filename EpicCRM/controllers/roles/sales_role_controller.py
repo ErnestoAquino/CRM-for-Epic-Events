@@ -6,6 +6,7 @@ from controllers.models.event_controller import EventController
 
 from crm.models import Collaborator
 from crm.models import Client
+from crm.models import Contract
 from services.services_crm import ServicesCRM
 from views.roles.sales_role_view_cli import SalesRoleViewCli
 
@@ -41,8 +42,8 @@ class SalesRoleController:
                 #  Update client information.
                 self.start_modification_client_process()
             case 3:
-                # TODO: Modify/Update clients contracts.
-                pass
+                # Modify/Update clients contracts.
+                self.process_contract_modification()
             case 4:
                 # TODO: Filter and display contracts (e.g., unsigned or not fully paid).
                 pass
@@ -155,6 +156,71 @@ class SalesRoleController:
 
         # Informs the client was updated successfully.
         self.view_cli.display_info_message("Client updated successfully.")
+
+    # ================== 4 - Modify/Update clients contracts.===============
+    def process_contract_modification(self) -> None:
+        selected_contract = self.get_contract_for_modification()
+
+        if not selected_contract:
+            self.view_cli.display_error_message("Contract not found.")
+            return
+
+        self.modify_contract(selected_contract)
+
+    def get_contract_for_modification(self) -> Contract | None:
+        self.view_cli.clear_screen()
+
+        try:
+            # Try to retrieve the contracts of clients for the collaborator
+            contracts = self.services_crm.get_contracts_for_collaborator(self.collaborator.id)
+            self.view_cli.display_contracts_for_selection(contracts)
+        except Exception as e:
+            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+            return None
+
+        # Check if there are contracts for the collaborator.
+        if not contracts:
+            self.view_cli.display_info_message("There are no contracts available")
+            return None
+
+        # If there are contracts, proceed to display them and ask the user to choose one for modification.
+        contracts_ids = [contract.id for contract in contracts]
+        selected_contract_id = self.view_cli.prompt_for_selection_by_id(contracts_ids, "Contract")
+
+        # Find the selected event by the user in the retrieved event list.
+        selected_contract = next((contract for contract in contracts if contract.id == selected_contract_id), None)
+
+        if not selected_contract:
+            self.view_cli.display_error_message("Selected event not found.")
+            return None
+
+        return selected_contract
+
+    def modify_contract(self, contract: Contract) -> None:
+        self.view_cli.clear_screen()
+
+        # Displays the details of the event to be modified.
+        self.view_cli.display_contract_details(contract)
+
+        modifications = self.view_cli.prompt_for_contract_modification()
+
+        # Checks if no modifications were provided.
+        if not modifications:
+            # Informs the user that no modifications were made and exits.
+            self.view_cli.display_info_message("No modifications were made.")
+            return
+
+        # Applies the modifications to the event object.
+        for field, value in modifications.items():
+            setattr(contract, field, value)
+
+        # Saves the modified event.
+        contract.save()
+
+        # Informs the user that the event was updated successfully.
+        self.view_cli.clear_screen()
+        self.view_cli.display_info_message("Contract updated successfully.")
+        self.view_cli.display_contract_details(contract)
 
     # ================== 6 - View the list of all clients.   ===============
     def present_list_all_clients(self):
