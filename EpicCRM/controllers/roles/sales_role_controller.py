@@ -45,8 +45,8 @@ class SalesRoleController:
                 # Modify/Update clients contracts.
                 self.process_contract_modification()
             case 4:
-                # TODO: Filter and display contracts (e.g., unsigned or not fully paid).
-                pass
+                # Filter and display contracts (e.g., unsigned or not fully paid).
+                self.filter_contracts()
             case 5:
                 # TODO: Create an event for a client who has signed a contract.
                 pass
@@ -157,7 +157,7 @@ class SalesRoleController:
         # Informs the client was updated successfully.
         self.view_cli.display_info_message("Client updated successfully.")
 
-    # ================== 4 - Modify/Update clients contracts.===============
+    # ================== 3 - Modify/Update clients contracts.===============
     def process_contract_modification(self) -> None:
         selected_contract = self.get_contract_for_modification()
 
@@ -172,7 +172,7 @@ class SalesRoleController:
 
         try:
             # Try to retrieve the contracts of clients for the collaborator
-            contracts = self.services_crm.get_contracts_for_collaborator(self.collaborator.id)
+            contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id)
             self.view_cli.display_contracts_for_selection(contracts)
         except Exception as e:
             self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
@@ -221,6 +221,32 @@ class SalesRoleController:
         self.view_cli.clear_screen()
         self.view_cli.display_info_message("Contract updated successfully.")
         self.view_cli.display_contract_details(contract)
+
+    # ================== 4 - Filter clients contracts.       ===============
+    def filter_contracts(self):
+        choice = self.view_cli.get_contract_filter_choices()
+        filter_types = {
+            1: None,  # No additional filter, get all contracts
+            2: "no_fully_paid",
+            3: "not_signed",
+        }
+
+        self.view_cli.clear_screen()
+        try:
+            if choice not in filter_types:
+                self.view_cli.display_error_message("Invalid choice.")
+                return
+
+            # Apply the appropriate filter based on the user's choice
+            filter_type = filter_types[choice]
+            contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id,
+                                                                                  filter_type=filter_type)
+            if not contracts:
+                self.view_cli.display_info_message("There are no contracts available.")
+
+            self.view_cli.display_list_of_contracts(contracts)
+        except Exception as e:
+            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
 
     # ================== 6 - View the list of all clients.   ===============
     def present_list_all_clients(self):
