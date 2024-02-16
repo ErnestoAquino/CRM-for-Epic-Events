@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 
 from controllers.models.client_controller import ClientController
 from controllers.models.contract_controller import ContractController
-from controllers.models.event_controller import EventController
 
 from crm.models import Collaborator
 from crm.models import Client
@@ -16,15 +15,9 @@ from views.roles.sales_role_view_cli import SalesRoleViewCli
 class SalesRoleController:
     def __init__(self, collaborator: Collaborator,
                  services_crm: ServicesCRM,
-                 client_controller: ClientController,
-                 contract_controller: ContractController,
-                 event_controller: EventController,
                  view_cli: SalesRoleViewCli):
         self.collaborator = collaborator
         self.services_crm = services_crm
-        self.client_controller = client_controller
-        self.contract_controller = contract_controller
-        self.event_controller = event_controller
         self.view_cli = view_cli
 
     def start(self):
@@ -305,55 +298,55 @@ class SalesRoleController:
 
     # ================== 6 - View the list of all clients.   ===============
     def present_list_all_clients(self):
-        try:
-            # Attempts to retrieve all clients from the client controller.
-            clients = self.client_controller.get_all_clients()
+        if not self.collaborator.has_perm("crm.view_client"):
+            self.view_cli.display_error_message("You do not have permission to view the list of contracts.")
+            return
 
-            # Checks if there are no clients available.
-            if not clients:
-                self.view_cli.display_info_message("No clients available.")
-                return
+        # Retrieve all clients
+        clients = self.services_crm.get_all_clients()
 
-            # Displays the list of clients to the user.
-            self.view_cli.display_list_of_clients(clients)
-        except PermissionDenied as e:
-            # If the user does not have permission to view clients, display an error message.
-            self.view_cli.display_error_message(str(e))
+        # Checks if there are no clients available.
+        if not clients:
+            self.view_cli.display_info_message("No clients available.")
+            return
+
+        # Displays the list of clients to the user.
+        self.view_cli.display_list_of_clients(clients)
 
     # ================== 7 - View the list of all contracts. ===============
     def present_list_all_contracts(self):
-        try:
-            # Tries to retrieve all contracts
-            contracts = self.contract_controller.get_all_contracts()
 
-            # Checks if there are no contracts available.
-            if not contracts:
-                self.view_cli.display_info_message("No contracts available.")
-                return
+        if not self.collaborator.has_perm("crm.view_contract"):
+            self.view_cli.display_error_message("You do not have permission to view the list of contracts.")
+            return
 
-            # Displays the list of contracts to the user.
-            self.view_cli.display_list_of_contracts(contracts)
+        # Retrieve all contracts
+        contracts = self.services_crm.get_all_contracts()
 
-        except PermissionDenied as e:
-            # If the user does not have permission to view contracts, display an error message.
-            self.view_cli.display_error_message(str(e))
+        # Checks if there are no contracts available.
+        if not contracts:
+            self.view_cli.display_info_message("No contracts available.")
+            return
+
+        # Displays the list of contracts to the user.
+        self.view_cli.display_list_of_contracts(contracts)
 
     # ================== 8 - View the list of all events. ==================
     def present_list_all_events(self):
-        try:
-            # Tries to retrieve all events
-            events = self.event_controller.get_all_events()
+        if not self.collaborator.has_perm("crm.view_event"):
+            self.view_cli.display_error_message("You do not have permission to view the list of events.")
+            return
 
-            # Checks if there are no events available.
-            if not events:
-                self.view_cli.display_info_message("No events available.")
-                return
-            # Displays the list of events to the user.
-            self.view_cli.display_list_of_events(events)
+        #  Retrieve all events
+        events = self.services_crm.get_all_events()
 
-        except PermissionDenied as e:
-            # If the user does not have permission to view events, display an error message.
-            self.view_cli.display_error_message(str(e))
+        # Checks if there are no events available.
+        if not events:
+            self.view_cli.display_info_message("No events available.")
+            return
+
+        # Displays the list of events to the user.
+        self.view_cli.display_list_of_events(events)
 
     # ================== 9 - Exit the CRM system.         ==================
     def exit_of_crm_system(self):
