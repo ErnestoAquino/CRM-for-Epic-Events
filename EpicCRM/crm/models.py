@@ -60,7 +60,7 @@ class Event(Model):
     contract = ForeignKey(Contract, on_delete=CASCADE)  # The contract associated with the event
     client_name = CharField(max_length=100)  # Name of the client associated with the event
     name = CharField(max_length = 255)  # Name for event
-    client_contact = TextField(blank=True, null=True)  # Contact details for the client related to the event
+    client_contact = TextField()  # Contact details for the client related to the event
     start_date = DateTimeField()  # Start date and time of the event
     end_date = DateTimeField()  # End date and time of the event
     support_contact = ForeignKey(settings.AUTH_USER_MODEL,
