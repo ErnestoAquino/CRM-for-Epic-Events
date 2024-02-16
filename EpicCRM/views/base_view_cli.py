@@ -69,7 +69,12 @@ class BaseViewCli:
         console = Console()
 
         # Create table
-        table = Table(title="List of all Events", show_header=True, header_style="bold magenta", expand=True)
+        table = Table(title="List of all Events",
+                      show_header=True,
+                      header_style="bold magenta",
+                      expand=True,
+                      show_lines=True)
+
         table.add_column("ID", style="dim", width=10)
         table.add_column("Contract ID", style="dim", width=12)
         table.add_column("Name", style="dim", width=12)
