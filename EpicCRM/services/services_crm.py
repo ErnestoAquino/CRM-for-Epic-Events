@@ -2,6 +2,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 from django.db.models.query import QuerySet
 
+from datetime import datetime
+
 from crm.models import Collaborator
 from crm.models import Event
 from crm.models import Contract
@@ -107,7 +109,10 @@ class ServicesCRM:
             clients = self.get_clients_for_collaborator(collaborator_id)
             contracts = Contract.objects.filter(client__in=clients)
 
-            if filter_type == "not_signed":
+            if filter_type == "signed":
+                contracts = contracts.filter(status="signed")
+
+            elif filter_type == "not_signed":
                 contracts = contracts.filter(status="not_signed")
 
             # Filters contracts with amount_remaining greater than (__gt) 0, indicating they are not fully paid yet.
@@ -127,6 +132,34 @@ class ServicesCRM:
             return Contract.objects.none()
 
     # ===================================== EVENTS SECTION =====================================
+    @staticmethod
+    def create_event(contract: Contract,
+                     client_name: str,
+                     name: str,
+                     client_contact: str,
+                     start_date: datetime,
+                     end_date: datetime,
+                     location: str,
+                     attendees: int,
+                     notes: str) -> Event:
+
+        # Create the new event
+        event = Event(
+            contract = contract,
+            client_name = client_name,
+            name = name,
+            client_contact = client_contact,
+            start_date = start_date,
+            end_date = end_date,
+            location = location,
+            attendees = attendees,
+            notes = notes
+        )
+        # Saves the new event to the database
+        event.save()
+
+        return event
+
     def get_all_events(self) -> QuerySet[Event]:
         try:
             return Event.objects.all()
