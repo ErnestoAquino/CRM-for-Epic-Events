@@ -3,11 +3,16 @@ import click
 from django.db.models.query import QuerySet
 from rich.console import Console
 from rich.table import Table
+from datetime import datetime
+from django.utils.timezone import make_aware
+from django.utils.timezone import get_default_timezone
+from dateutil.parser import parse
 
 from views.base_view_cli import BaseViewCli
 
 from crm.models import Client
 from crm.models import Contract
+from crm.models import Event
 
 
 class SalesRoleViewCli(BaseViewCli):
@@ -261,6 +266,7 @@ class SalesRoleViewCli(BaseViewCli):
 
     def display_contract_details(self, contract: Contract) -> None:
         console = Console()
+        self.clear_screen()
 
         # Create a table to display contract details
         table = Table(title="Contract Detail",
@@ -366,3 +372,141 @@ class SalesRoleViewCli(BaseViewCli):
         choice = self.get_collaborator_choice(limit=len(filter_options))
 
         return choice
+
+    def get_data_for_add_new_event(self) -> dict:
+        self.display_info_message("Please provide the following information for the new event")
+
+        client_name = self.get_valid_input_with_limit("Client Name", 100)
+        name = self.get_valid_input_with_limit("Name", 255)
+        client_contact = self.get_valid_input_with_limit("Client Contact", 1000)
+        start_date = self.get_valid_start_date()
+        end_date = self.get_valid_end_date(start_date)
+        location = self.get_valid_input_with_limit("Location", 300)
+        attendees = self.get_valid_input_positive_integer("Attendees")
+        notes = click.prompt("Notes (optional)", default="", show_default=False).strip()
+
+        event_data = {
+            "client_name": client_name,
+            "name": name,
+            "client_contact": client_contact,
+            "start_date": start_date,
+            "end_date": end_date,
+            "location": location,
+            "attendees": attendees,
+            "notes": notes
+        }
+        return event_data
+
+    def get_valid_input_with_limit(self, prompt_text: str, max_length: int) -> str:
+        # Loop to ensure valid input within the specified limit.
+        while True:
+            # Prompts the user for input.
+            user_input = click.prompt(prompt_text, type=str).strip()
+
+            # Checks if the input is empty.
+            if not user_input:
+                self.display_warning_message(f"{prompt_text} cannot be empty.")
+                continue
+
+            # Checks if the input exceeds the maximum length.
+            if len(user_input) > max_length:
+                self.display_warning_message(f"{prompt_text} must not exceed {max_length} characters.")
+                continue
+
+            # Returns the valid input.
+            return user_input
+
+    def get_valid_input_positive_integer(self, prompt_text: str) -> int:
+        while True:
+            user_input_str = click.prompt(prompt_text, default = "", show_default = False)
+            try:
+                # Attempts to convert the input to an integer.
+                user_input_int = int(user_input_str)
+            except ValueError:
+                # If the input cannot be converted to an integer, display an error message.
+                self.display_error_message("Please enter a valid integer.")
+                continue
+
+            # Checks if the input is a positive integer.
+            if user_input_int <= 0:
+
+                # If the input is not positive, display an error message.
+                self.display_error_message("The number must be greater than zero. Please try again.")
+                continue
+
+            # Returns the valid positive integer.
+            return user_input_int
+
+    def get_valid_start_date(self) -> datetime:
+        # Loop to ensure valid input for the start date.
+        while True:
+            start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
+            try:
+
+                # Attempts to parse the input string into a datetime object.
+                naive_start_date = parse(start_date_str)
+            except ValueError:
+
+                # If the input cannot be parsed, display an error message.
+                self.display_error_message("Invalid date format. Please use YYYY-MM-DD HH:MM.")
+                continue
+
+            # Checks if the start date is in the future.
+            if naive_start_date < datetime.now():
+                self.display_error_message("Start date must be in the future. Please try again.")
+                continue
+
+            # Converts the naive start date to an aware datetime object and returns it.
+            return make_aware(naive_start_date, get_default_timezone())
+
+    def get_valid_end_date(self, start_date: datetime) -> datetime:
+        # Loop to ensure valid input for the end date.
+        while True:
+            end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
+            try:
+
+                # Attempts to parse the input string into a datetime object.
+                naive_end_date = parse(end_date_str)
+                aware_end_date = make_aware(naive_end_date, get_default_timezone())
+            except ValueError:
+
+                # If the input cannot be parsed, display an error message.
+                self.display_error_message("Invalid date format. Please use YYYY-MM-DD HH:MM.")
+                continue
+                # Checks if the end date is before or equal to the start date.
+            if aware_end_date <= start_date:
+
+                # If the end date is not after the start date, display an error message.
+                self.display_error_message("End date must be after start date. Please try again.")
+                continue
+
+                # Returns the valid end date.
+            return aware_end_date
+
+    def display_event_details(self, event: Event) -> None:
+
+        console = Console()
+        self.clear_screen()
+
+        table = Table(title = "Event Detail",
+                      show_header = True,
+                      header_style = "bold blue",
+                      show_lines = True)
+
+        table.add_column("Field", style = "dim", width = 20)
+        table.add_column("Value", width = 40)
+
+        table.add_row("Event ID", str(event.id))
+        table.add_row("Contract ID", str(event.contract.id))
+        table.add_row("Client Name", event.client_name)
+        table.add_row("Event Name", event.name)
+        table.add_row("Client Contact", event.client_contact)
+        table.add_row("Start Date", event.start_date.strftime("%Y-%m-%d %H:%M"))
+        table.add_row("End Date", event.end_date.strftime("%Y-%m-%d %H:%M"))
+        support_contact_name = event.support_contact.get_full_name() if event.support_contact else "N/A"
+        table.add_row("Support Contact", support_contact_name)
+        table.add_row("Location", event.location)
+        table.add_row("Attendees", str(event.attendees))
+        table.add_row("Notes", event.notes or "N/A")
+
+        console.print(table, justify = "center")
