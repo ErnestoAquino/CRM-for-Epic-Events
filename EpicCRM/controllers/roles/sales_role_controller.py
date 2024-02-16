@@ -2,9 +2,6 @@ from django.db import IntegrityError
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 
-from controllers.models.client_controller import ClientController
-from controllers.models.contract_controller import ContractController
-
 from crm.models import Collaborator
 from crm.models import Client
 from crm.models import Contract
