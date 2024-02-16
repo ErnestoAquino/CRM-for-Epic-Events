@@ -1,3 +1,5 @@
+from django.db import IntegrityError
+from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 
 from controllers.models.client_controller import ClientController
@@ -48,8 +50,8 @@ class SalesRoleController:
                 # Filter and display contracts (e.g., unsigned or not fully paid).
                 self.filter_contracts()
             case 5:
-                # TODO: Create an event for a client who has signed a contract.
-                pass
+                # Create an event for a client who has signed a contract.
+                self.process_event_creation()
             case 6:
                 # View the list of all clients.
                 self.view_cli.clear_screen()
@@ -247,6 +249,59 @@ class SalesRoleController:
             self.view_cli.display_list_of_contracts(contracts)
         except Exception as e:
             self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+
+    # ================== 5 - Create an event for a client who has signed a contract   ===============
+    def process_event_creation(self):
+        self.view_cli.clear_screen()
+        try:
+            signed_contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id,
+                                                                                         filter_type="signed")
+        except Exception as e:
+            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+            return
+
+        select_contract_to_add_event = self.select_contract_from_list(signed_contracts)
+
+        if not select_contract_to_add_event:
+            return
+
+        self.view_cli.display_contract_details(select_contract_to_add_event)
+        event_data = self.view_cli.get_data_for_add_new_event()
+        event_data["contract"] = select_contract_to_add_event
+
+        try:
+            new_event = self.services_crm.create_event(**event_data)
+        except ValidationError as e:
+            self.view_cli.display_error_message(str(e))
+            return
+        except IntegrityError as e:
+            self.view_cli.display_error_message(f"An integrity error occurred while creating the event: {e}")
+            return
+        except Exception as e:
+            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+            return
+        self.view_cli.display_info_message(f"Event {new_event.name} created successfully.")
+        self.view_cli.display_event_details(new_event)
+
+    def select_contract_from_list(self, filtered_contracts: QuerySet[Contract]) -> Contract | None:
+        if not filtered_contracts:
+            self.view_cli.display_error_message("No contracts available.")
+            return None
+
+        self.view_cli.display_contracts_for_selection(filtered_contracts)
+        contracts_ids = [contract.id for contract in filtered_contracts]
+
+        selected_contract_id = self.view_cli.prompt_for_selection_by_id(contracts_ids, "Contract")
+
+        # Find the selected event by the user in the retrieved event list.
+        selected_contract = next((contract for contract in filtered_contracts if contract.id == selected_contract_id),
+                                 None)
+
+        if not selected_contract:
+            self.view_cli.display_error_message("Selected contract not found.")
+            return None
+
+        return selected_contract
 
     # ================== 6 - View the list of all clients.   ===============
     def present_list_all_clients(self):
