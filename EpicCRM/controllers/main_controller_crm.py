@@ -76,17 +76,9 @@ class MainControllerCRM:
                                                                 view_cli)
                 support_role_controller.start()
             case "sales":
-                client_controller = ClientController(collaborator, services)
-                contract_controller = ContractController(collaborator, services)
-                event_controller = EventController(collaborator, services)
                 view_cli = SalesRoleViewCli()
-                services_crm = ServicesCRM()
-
                 sales_role_controller = SalesRoleController(collaborator,
-                                                            services_crm,
-                                                            client_controller,
-                                                            contract_controller,
-                                                            event_controller,
+                                                            self.crm_services,
                                                             view_cli)
                 sales_role_controller.start()
             case "management":
