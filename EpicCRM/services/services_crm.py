@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
+from django.db import DatabaseError
 from django.db.models.query import QuerySet
 
 from datetime import datetime
@@ -98,6 +99,11 @@ class ServicesCRM:
     def get_all_clients(self) -> QuerySet[Client]:
         try:
             return Client.objects.all()
+
+        except DatabaseError as e:
+            print(f"Error: {e}")
+            return Contract.objects.none()
+
         except Exception as e:
             print(f"Error retrieving clients: {e}")
             return Client.objects.none()
@@ -127,8 +133,11 @@ class ServicesCRM:
     def get_all_contracts(self) -> QuerySet[Contract]:
         try:
             return Contract.objects.all()
+        except DatabaseError as e:
+            print(f"Error: {e}")
+            return Contract.objects.none()
         except Exception as e:
-            print(f"Error retrieving clients: {e}")
+            print(f"Error retrieving contracts: {e}")
             return Contract.objects.none()
 
     # ===================================== EVENTS SECTION =====================================
@@ -163,6 +172,9 @@ class ServicesCRM:
     def get_all_events(self) -> QuerySet[Event]:
         try:
             return Event.objects.all()
+        except DatabaseError as e:
+            print(f"Error: {e}")
+            return Event.objects.none()
         except Exception as e:
             print(f"Error retrieving events: {e}")
             return Event.objects.none()
