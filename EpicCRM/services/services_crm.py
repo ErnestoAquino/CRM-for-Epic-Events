@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 from django.db import DatabaseError
@@ -28,7 +29,7 @@ class ServicesCRM:
                               password: str,
                               email: str,
                               role_name: str,
-                              employee_number: str):
+                              employee_number: str) -> Collaborator:
 
         # Check if the username is already in use.
         if Collaborator.objects.filter(username=username).exists():
@@ -42,17 +43,62 @@ class ServicesCRM:
         if Collaborator.objects.filter(employee_number=employee_number).exists():
             raise ValidationError(f"The employee number: {employee_number} is already in use.")
 
+        # Get or create the role
         role, created = Role.objects.get_or_create(name=role_name)
 
-        collaborator = Collaborator.objects.create(first_name=first_name,
-                                                   last_name=last_name,
-                                                   username=username,
-                                                   email=email,
-                                                   role=role,
-                                                   employee_number=employee_number)
+        # Create the Collaborator instance
+        collaborator = Collaborator(first_name=first_name,
+                                    last_name=last_name,
+                                    username=username,
+                                    email=email,
+                                    role=role,
+                                    employee_number=employee_number)
+
         collaborator.set_password(password)
-        # TODO: Add the user to the corresponding group before saving it.
-        collaborator.save()
+
+        # Add the collaborator to the corresponding group.
+        role_to_group = {
+            'management': 'management_team',
+            'sales': 'sales_team',
+            'support': 'support_team',
+        }
+        group_name = role_to_group.get(role_name)
+        if group_name:
+            group, group_created = Group.objects.get_or_create(name = group_name)
+            collaborator.save()
+            collaborator.groups.add(group)
+            collaborator.save()
+
+        return collaborator
+
+    @staticmethod
+    def modify_collaborator(collaborator: Collaborator, modifications: dict) -> Collaborator:
+
+        # Apply modifications to the collaborator
+        for field, value in modifications.items():
+            setattr(collaborator, field, value)
+
+        try:
+            # Try to save the changes
+            collaborator.save()
+
+        except ValidationError as e:
+            raise ValidationError(f"Validation error: {e}")
+        except DatabaseError as e:
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            raise Exception("Unexpected error retrieving collaborators.") from e
+
+        return collaborator
+
+    @staticmethod
+    def get_all_non_superuser_collaborators():
+        try:
+            return Collaborator.objects.exclude(is_superuser=True)
+        except DatabaseError as e:
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            raise Exception("Unexpected error retrieving collaborators.") from e
 
     # ===================================== CLIENTS SECTION =====================================
     @staticmethod
