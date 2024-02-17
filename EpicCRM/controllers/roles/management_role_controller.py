@@ -1,5 +1,6 @@
 from typing import Optional
 from django.core.exceptions import ValidationError
+from django.db import DatabaseError
 from django.db.models.query import QuerySet
 from crm.models import Collaborator
 from services.services_crm import ServicesCRM
@@ -142,10 +143,10 @@ class ManagementRoleController:
         try:
             collaborators = self.services_crm.get_all_non_superuser_collaborators()
         except DatabaseError:
-            self.view.display_error_message("I encountered a problem with the database, please try again later.")
+            self.view_cli.display_error_message("I encountered a problem with the database, please try again later.")
             return
         except Exception as e:
-            self.view.display_error_message(f"{e}")
+            self.view_cli.display_error_message(f"{e}")
             return
 
         if not collaborators:
@@ -155,8 +156,30 @@ class ManagementRoleController:
         selected_collaborator = self.get_collaborator_for_modification(collaborators)
         if not selected_collaborator:
             self.view_cli.display_error_message("We couldn't find the collaborator. Please try again later.")
+            return
+
         self.view_cli.display_collaborator_details(selected_collaborator)
-        collaborator_data = self.view_cli.get_data_for_modify_collaborator()  # TODO: <- Escribir el metodo
+        collaborator_data = self.view_cli.get_data_for_modify_collaborator()
+
+        # Checks if no modifications were provided.
+        if not collaborator_data:
+            # Informs the user that no modifications were made and exits.
+            self.view_cli.display_info_message("No modifications were made.")
+            return
+
+        try:
+            collaborator_modify = self.services_crm.modify_collaborator(selected_collaborator, collaborator_data)
+        except ValidationError as e:
+            self.view_cli.display_error_message(str(e))
+            return
+        except DatabaseError:
+            self.view.display_error_message("I encountered a problem with the database, please try again later.")
+            return
+        except Exception as e:
+            self.view_cli.display_error_message(str(e))
+            return
+        self.view_cli.display_collaborator_details(collaborator_modify)
+        self.view_cli.display_info_message("The collaborator has been modified successfully.")
 
     def get_collaborator_for_modification(self, collaborators: QuerySet[Collaborator]) -> Optional[Collaborator]:
         self.view_cli.clear_screen()
