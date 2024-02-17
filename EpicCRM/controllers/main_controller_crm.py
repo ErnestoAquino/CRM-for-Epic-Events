@@ -6,6 +6,8 @@ from crm.models import Role
 
 from controllers.roles.support_role_controller import SupportRoleController
 from controllers.roles.sales_role_controller import SalesRoleController
+from controllers.roles.management_role_controller import ManagementRoleController
+
 from controllers.models.client_controller import ClientController
 from controllers.models.contract_controller import ContractController
 from controllers.models.event_controller import EventController
@@ -15,23 +17,13 @@ from services.services_crm import ServicesCRM
 from views.main_view_cli import MainViewCLI
 from views.roles.support_role_view_cli import SupportRoleViewCli
 from views.roles.sales_role_view_cli import SalesRoleViewCli
+from views.roles.management_role_view_cli import ManagementRoleViewCli
 
 
 class MainControllerCRM:
     def __init__(self):
         self.crm_services = ServicesCRM()
         self.view_cli = MainViewCLI()
-
-    def create_collaborator(self):
-        data = self.view_cli.get_data_for_register_new_collaborator()
-
-        try:
-            self.crm_services.register_collaborator(**data)
-            self.view_cli.print_message("User registered successfully", "green")
-        except ValidationError as e:
-            self.view_cli.print_message(f"Error: {e}", "red")
-        except ValueError as e:
-            self.view_cli.print_message(f"Error: {e}", "red")
 
     def authenticate_collaborator(self) -> Optional[Collaborator]:
         login_data = self.view_cli.prompt_login()
@@ -82,7 +74,10 @@ class MainControllerCRM:
                                                             view_cli)
                 sales_role_controller.start()
             case "management":
-                # TODO: Init management_role_controller and call method star
-                print("Init management_role_controller and call method star")
+                view_cli = ManagementRoleViewCli()
+                management_role_controller = ManagementRoleController(collaborator,
+                                                                      self.crm_services,
+                                                                      view_cli)
+                management_role_controller.start()
             case _:
                 self.view_cli.print_message("Your role does not have specific task assigned.", "yellow")
