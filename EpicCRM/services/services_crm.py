@@ -73,21 +73,53 @@ class ServicesCRM:
 
     @staticmethod
     def modify_collaborator(collaborator: Collaborator, modifications: dict) -> Collaborator:
+        if 'username' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
+                username = modifications['username']).exists():
+            raise ValidationError(
+                f"The username: {modifications['username']} is already in use by another collaborator.")
 
-        # Apply modifications to the collaborator
+        if 'email' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
+                email = modifications['email']).exists():
+            raise ValidationError(f"The email: {modifications['email']} is already in use by another collaborator.")
+
+        if 'employee_number' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
+                employee_number = modifications['employee_number']).exists():
+            raise ValidationError(
+                f"The employee number: {modifications['employee_number']} is already in use by another collaborator.")
+
+        role_modified = False
+
+        if 'role_name' in modifications:
+            new_role_name = modifications.pop('role_name')
+            if collaborator.role.name != new_role_name:
+                role_modified = True
+                role, created = Role.objects.get_or_create(name = new_role_name)
+                collaborator.role = role
+
         for field, value in modifications.items():
             setattr(collaborator, field, value)
 
         try:
-            # Try to save the changes
+            if role_modified:
+                collaborator.groups.clear()
+                role_to_group = {
+                    'management': 'management_team',
+                    'sales': 'sales_team',
+                    'support': 'support_team',
+                }
+                new_group_name = role_to_group.get(collaborator.role.name)
+                if new_group_name:
+                    new_group, _ = Group.objects.get_or_create(name = new_group_name)
+                    collaborator.groups.add(new_group)
+
             collaborator.save()
 
         except ValidationError as e:
-            raise ValidationError(f"Validation error: {e}")
+            raise ValidationError(f"Validation error: {e}") from e
         except DatabaseError as e:
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
-            raise Exception("Unexpected error retrieving collaborators.") from e
+            raise Exception("Unexpected error updating collaborator.") from e
 
         return collaborator
 
