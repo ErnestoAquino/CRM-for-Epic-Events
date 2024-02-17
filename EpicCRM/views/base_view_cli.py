@@ -218,13 +218,17 @@ class BaseViewCli:
         # Print table (menu options)
         console.print(table)
 
-    def get_valid_input_with_limit(self, prompt_text: str, max_length: int) -> str:
-        # Loop to ensure valid input within the specified limit.
+    def get_valid_input_with_limit(self, prompt_text: str, max_length: int, allow_blank: bool = False) -> str:
+        # Loop to ensure valid input within the specified limit or allow blank input.
         while True:
             # Prompts the user for input.
-            user_input = click.prompt(prompt_text, type=str).strip()
+            user_input = click.prompt(prompt_text, type=str, default="", show_default=False).strip()
 
-            # Checks if the input is empty.
+            # Checks if the input is empty and blank inputs are allowed.
+            if allow_blank and user_input == "":
+                return user_input
+
+            # Checks if the input is empty and blank inputs are not allowed.
             if not user_input:
                 self.display_warning_message(f"{prompt_text} cannot be empty.")
                 continue
@@ -234,16 +238,21 @@ class BaseViewCli:
                 self.display_warning_message(f"{prompt_text} must not exceed {max_length} characters.")
                 continue
 
-            # Returns the valid input.
+            # Returns the valid input if it's not empty or exceeds the length limit
             return user_input
 
-    def get_valid_email(self) -> str:
+    def get_valid_email(self, allow_blank: bool = False) -> str:
         email_regex = r'\b[A-Z|a-z|0-9|._%+-]+@[A-Z|a-z|0-9|.-]+\.[A-Z|a-z]{2,}\b'
         while True:
-            email = click.prompt("Email", type = str).strip()
+            email = click.prompt("Email", type=str, default="", show_default=False).strip()
+
+            if allow_blank and email == "":
+                return email
+
             if not email:
                 self.display_warning_message("Email cannot be empty.")
                 continue
+
             if not re.fullmatch(email_regex, email):
                 self.display_error_message(
                     "Invalid email format. Please enter a valid email address, such as example@domain.com.")
