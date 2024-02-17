@@ -32,12 +32,16 @@ class ManagementRoleViewCli(BaseViewCli):
 
         return collaborator_data
 
-    def get_valid_role_for_collaborator(self) -> str:
+    def get_valid_role_for_collaborator(self, allow_blank: bool = False) -> str:
         roles_choices = ['management', 'sales', 'support']
         role_prompt = "Role (management, sales, support)"
 
         while True:
-            role = click.prompt(role_prompt, type = str).strip().lower()
+            role = click.prompt(role_prompt, type=str, default="", show_default=True).strip().lower()
+
+            if allow_blank and role == "":
+                return role
+
             if not role:
                 self.display_warning_message("Role cannot be empty.")
                 continue
@@ -115,4 +119,29 @@ class ManagementRoleViewCli(BaseViewCli):
         console.print(table)
 
     def get_data_for_modify_collaborator(self) -> dict:
-        pass
+        self.display_info_message("Modifying collaborator: {collaborator.username}. "
+                                  "Leave blank any field you do not wish to modify.")
+
+        modification_data = {}
+
+        first_name = self.get_valid_input_with_limit("New First Name (or leave blank)", 50, allow_blank=True)
+        if first_name:
+            modification_data["first_name"] = first_name
+
+        last_name = self.get_valid_input_with_limit("New Last Name (or leave blank)", 50, allow_blank=True)
+        if last_name:
+            modification_data["last_name"] = last_name
+
+        email = self.get_valid_email(allow_blank=True)
+        if email:
+            modification_data["email"] = email
+
+        role = self.get_valid_role_for_collaborator(allow_blank = True)
+        if role:
+            modification_data["role_name"] = role
+
+        employee_number = self.get_valid_input_with_limit("New Employee Number (or leave blank)", 50, allow_blank=True)
+        if employee_number:
+            modification_data["employee_number"] = employee_number
+
+        return modification_data
