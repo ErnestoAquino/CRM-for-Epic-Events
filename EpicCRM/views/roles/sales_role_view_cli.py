@@ -397,25 +397,6 @@ class SalesRoleViewCli(BaseViewCli):
         }
         return event_data
 
-    def get_valid_input_with_limit(self, prompt_text: str, max_length: int) -> str:
-        # Loop to ensure valid input within the specified limit.
-        while True:
-            # Prompts the user for input.
-            user_input = click.prompt(prompt_text, type=str).strip()
-
-            # Checks if the input is empty.
-            if not user_input:
-                self.display_warning_message(f"{prompt_text} cannot be empty.")
-                continue
-
-            # Checks if the input exceeds the maximum length.
-            if len(user_input) > max_length:
-                self.display_warning_message(f"{prompt_text} must not exceed {max_length} characters.")
-                continue
-
-            # Returns the valid input.
-            return user_input
-
     def get_valid_input_positive_integer(self, prompt_text: str) -> int:
         while True:
             user_input_str = click.prompt(prompt_text, default = "", show_default = False)
