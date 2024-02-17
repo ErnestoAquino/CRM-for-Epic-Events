@@ -1,3 +1,5 @@
+import re
+from typing import List
 from django.db.models.query import QuerySet
 import click
 from rich.box import ROUNDED
@@ -11,6 +13,16 @@ class BaseViewCli:
     def ask_user_if_continue(self) -> bool:
         while True:
             response = click.prompt("Do you want to perform another operation? (yes/no)", type=str).lower()
+            if response == "yes":
+                return True
+            elif response == "no":
+                return False
+            else:
+                self.display_error_message("Invalid response. Please enter 'yes' or 'no'.")
+
+    def get_user_confirmation(self, question: str) -> bool:
+        while True:
+            response = click.prompt(f"{question} (yes/no)", type=str).lower()
             if response == "yes":
                 return True
             elif response == "no":
@@ -185,3 +197,55 @@ class BaseViewCli:
 
         # Print the table using Rich
         console.print(table)
+
+    # ==========================  Management Controller    ===============================
+
+    def show_menu(self, collaborator_name: str, menu_options: List[str]) -> None:
+        self.clear_screen()
+        console = Console()
+
+        # Create a table for the menu options.
+        table = Table(show_header = True, header_style = "bold magenta")
+        table.add_column("Menu Options", justify = "left", style = "dim")
+
+        # Add menu options to the table
+        for option in menu_options:
+            table.add_row(option)
+
+        self.display_info_message(f"Welcome {collaborator_name}.")
+        self.display_info_message("What operation would you like to perform?\n")
+
+        # Print table (menu options)
+        console.print(table)
+
+    def get_valid_input_with_limit(self, prompt_text: str, max_length: int) -> str:
+        # Loop to ensure valid input within the specified limit.
+        while True:
+            # Prompts the user for input.
+            user_input = click.prompt(prompt_text, type=str).strip()
+
+            # Checks if the input is empty.
+            if not user_input:
+                self.display_warning_message(f"{prompt_text} cannot be empty.")
+                continue
+
+            # Checks if the input exceeds the maximum length.
+            if len(user_input) > max_length:
+                self.display_warning_message(f"{prompt_text} must not exceed {max_length} characters.")
+                continue
+
+            # Returns the valid input.
+            return user_input
+
+    def get_valid_email(self) -> str:
+        email_regex = r'\b[A-Z|a-z|0-9|._%+-]+@[A-Z|a-z|0-9|.-]+\.[A-Z|a-z]{2,}\b'
+        while True:
+            email = click.prompt("Email", type = str).strip()
+            if not email:
+                self.display_warning_message("Email cannot be empty.")
+                continue
+            if not re.fullmatch(email_regex, email):
+                self.display_error_message(
+                    "Invalid email format. Please enter a valid email address, such as example@domain.com.")
+                continue
+            return email
