@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import List
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.db.models.query import QuerySet
@@ -140,51 +141,13 @@ class ManagementRoleController:
     def process_collaborator_modification(self) -> None:
         self.view_cli.clear_screen()
 
-        try:
-            collaborators = self.services_crm.get_all_non_superuser_collaborators()
-        except DatabaseError:
-            self.view_cli.display_error_message("I encountered a problem with the database, please try again later.")
-            return
-        except Exception as e:
-            self.view_cli.display_error_message(f"{e}")
-            return
-
+        collaborators = self.get_all_collaborators()
         if not collaborators:
-            self.view_cli.display_info_message("There are no collaborators available to display.")
             return
-
-        selected_collaborator = self.get_collaborator_for_modification(collaborators)
+        selected_collaborator = self.select_collaborator_for_modification(collaborators)
         if not selected_collaborator:
-            self.view_cli.display_error_message("We couldn't find the collaborator. Please try again later.")
             return
-
-        while True:
-            self.view_cli.display_collaborator_details(selected_collaborator)
-            collaborator_data = self.view_cli.get_data_for_modify_collaborator()
-
-            # Checks if no modifications were provided.
-            if not collaborator_data:
-                # Informs the user that no modifications were made and exits.
-                self.view_cli.display_info_message("No modifications were made.")
-                return
-
-            try:
-                collaborator_modify = self.services_crm.modify_collaborator(selected_collaborator, collaborator_data)
-                self.view_cli.clear_screen()
-                self.view_cli.display_collaborator_details(collaborator_modify)
-                self.view_cli.display_info_message("The collaborator has been modified successfully.")
-                break  # Exit the loop after successful modification
-            except ValidationError as e:
-                self.view_cli.display_error_message(str(e))
-                continue_operation = self.view_cli.get_user_confirmation("Do you want to try modifying again?")
-                if not continue_operation:
-                    break  # Exit the loop if the user does not want to try again
-            except DatabaseError:
-                self.view_cli.display_error_message("I encountered a problem with the database, please try again later.")
-                break
-            except Exception as e:
-                self.view_cli.display_error_message(str(e))
-                break
+        self.modify_collaborator(selected_collaborator)
 
     def get_collaborator_for_modification(self, collaborators: QuerySet[Collaborator]) -> Optional[Collaborator]:
         self.view_cli.clear_screen()
@@ -196,6 +159,55 @@ class ManagementRoleController:
                                       if collaborator.id == selected_collaborator_id), None)
 
         return selected_collaborator
+
+    def get_all_collaborators(self) -> List[Collaborator]:
+        try:
+            collaborators = self.services_crm.get_all_non_superuser_collaborators()
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+            return []
+        except Exception as e:
+            self.view_cli.display_error_message(f"{e}")
+            return []
+
+        if not collaborators:
+            self.view_cli.display_info_message("There are no collaborators available to display.")
+
+        return collaborators
+
+    def select_collaborator_for_modification(self, collaborators: List[Collaborator]) -> Optional[Collaborator]:
+        selected_collaborator = self.get_collaborator_for_modification(collaborators)
+        if not selected_collaborator:
+            self.view_cli.display_error_message("We couldn't find the collaborator. Please try again later.")
+
+        return selected_collaborator
+
+    def modify_collaborator(self, selected_collaborator: Collaborator) -> None:
+        while True:
+            self.view_cli.display_collaborator_details(selected_collaborator)
+            collaborator_data = self.view_cli.get_data_for_modify_collaborator()
+
+            if not collaborator_data:
+                self.view_cli.display_info_message("No modifications were made.")
+                return
+
+            try:
+                collaborator_modified = self.services_crm.modify_collaborator(selected_collaborator, collaborator_data)
+                self.view_cli.clear_screen()
+                self.view_cli.display_collaborator_details(collaborator_modified)
+                self.view_cli.display_info_message("The collaborator has been modified successfully.")
+                break
+            except ValidationError as e:
+                self.view_cli.display_error_message(str(e))
+                continue_operation = self.view_cli.get_user_confirmation("Do you want to try modifying again?")
+                if not continue_operation:
+                    break
+            except DatabaseError:
+                self.view_cli.display_error_message("I encountered a problem with the database. Please try again.")
+                break
+            except Exception as e:
+                self.view_cli.display_error_message(str(e))
+                break
 
     def process_collaborator_removal(self) -> None:
         pass
