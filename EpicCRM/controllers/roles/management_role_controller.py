@@ -144,19 +144,22 @@ class ManagementRoleController:
         collaborators = self.get_all_collaborators()
         if not collaborators:
             return
-        selected_collaborator = self.select_collaborator_for_modification(collaborators)
+        selected_collaborator = self.select_collaborator_from(collaborators)
         if not selected_collaborator:
             return
         self.modify_collaborator(selected_collaborator)
 
-    def get_collaborator_for_modification(self, collaborators: QuerySet[Collaborator]) -> Optional[Collaborator]:
+    def select_collaborator_from(self, list_of_collaborators: List[str]) -> Optional[Collaborator]:
         self.view_cli.clear_screen()
-        self.view_cli.display_collaborators_for_selection(collaborators)
-        collaborators_ids = [collaborator.id for collaborator in collaborators]
+        self.view_cli.display_collaborators_for_selection(list_of_collaborators)
+        collaborators_ids = [collaborator.id for collaborator in list_of_collaborators]
         selected_collaborator_id = self.view_cli.prompt_for_selection_by_id(collaborators_ids, "Collaborator")
 
-        selected_collaborator = next((collaborator for collaborator in collaborators
+        selected_collaborator = next((collaborator for collaborator in list_of_collaborators
                                       if collaborator.id == selected_collaborator_id), None)
+
+        if not selected_collaborator:
+            self.view_cli.display_error_message("We couldn't find the collaborator. Please try again later.")
 
         return selected_collaborator
 
@@ -174,13 +177,6 @@ class ManagementRoleController:
             self.view_cli.display_info_message("There are no collaborators available to display.")
 
         return collaborators
-
-    def select_collaborator_for_modification(self, collaborators: List[Collaborator]) -> Optional[Collaborator]:
-        selected_collaborator = self.get_collaborator_for_modification(collaborators)
-        if not selected_collaborator:
-            self.view_cli.display_error_message("We couldn't find the collaborator. Please try again later.")
-
-        return selected_collaborator
 
     def modify_collaborator(self, selected_collaborator: Collaborator) -> None:
         while True:
@@ -210,7 +206,65 @@ class ManagementRoleController:
                 break
 
     def process_collaborator_removal(self) -> None:
-        pass
+        """
+        Handles the process of removing a collaborator.
+
+        Retrieves all collaborators, allows the user to select a collaborator to remove, and then
+        deletes the selected collaborator.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Retrieve all collaborators
+        collaborators = self.get_all_collaborators()
+        if not collaborators:
+            return
+
+        # Select a collaborator to remove
+        select_collaborator = self.select_collaborator_from(collaborators)
+        if not select_collaborator:
+            return
+
+        # Delete the selected collaborator
+        self.delete_collaborator(select_collaborator)
+
+    def delete_collaborator(self, collaborator: Collaborator) -> None:
+        """
+        Handles the deletion of a collaborator.
+
+        This method displays the details of the collaborator to be deleted,
+        confirms with the user if they want to proceed with the deletion,
+        and then attempts to delete the collaborator. It handles database
+        errors and other unexpected exceptions.
+
+        Args:
+            collaborator (Collaborator): The collaborator to be deleted.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+        self.view_cli.display_collaborator_details(collaborator)
+        self.view_cli.display_warning_message(f"You have selected: {self.collaborator.get_full_name()} for deletion.")
+        self.view_cli.display_warning_message("Please note that this action is irreversible.")
+
+        # Confirm with the user if they want to proceed with deletion
+        continue_action = self.view_cli.get_user_confirmation("Do you want to delete the collaborator?")
+
+        # If user cancels, display message and return
+        if not continue_action:
+            self.view_cli.display_info_message("The deletion of the collaborator has been canceled.")
+            return
+        try:
+            # Attempt to delete the collaborator
+            self.services_crm.delete_collaborator(collaborator)
+            self.view_cli.display_info_message("Collaborator successfully deleted.")
+        except DatabaseError:
+            self.view_cli.display_error_message("A problem occurred with the database. Please try again later.")
+        except Exception as e:
+            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
 
     # ============================== 9 - Exit the CRM system.    =======================================================
     def exit_of_crm_system(self) -> None:
