@@ -124,13 +124,44 @@ class ServicesCRM:
         return collaborator
 
     @staticmethod
-    def get_all_non_superuser_collaborators():
+    def get_all_non_superuser_collaborators() -> QuerySet[Collaborator]:
+        """
+        Retrieve all collaborators who are not superusers from the database.
+
+        Returns:
+            QuerySet: A queryset containing all non-superuser collaborators.
+        """
         try:
+            # Attempt to retrieve all collaborators who are not superusers
             return Collaborator.objects.exclude(is_superuser=True)
         except DatabaseError as e:
+            # Raise a new exception if there's a problem accessing the database
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error retrieving collaborators.") from e
+
+    @staticmethod
+    def delete_collaborator(collaborator: Collaborator) -> None:
+        """
+        Deletes a collaborator from the database.
+
+        Args:
+            collaborator (Collaborator): The collaborator to delete.
+
+        Raises:
+            DatabaseError: If there's a problem accessing the database.
+            Exception: If an unexpected error occurs during deletion.
+        """
+        try:
+            # Attempt to delete the collaborator
+            collaborator.delete()
+        except DatabaseError as e:
+            # Raise a new exception if there's a problem accessing the database
+            raise DatabaseError(f"Problem with database access") from e
+        except Exception as e:
+            # Raise a generic exception if an unexpected error occurs
+            raise Exception("Unexpected error deleting collaborator") from e
 
     # ===================================== CLIENTS SECTION =====================================
     @staticmethod
