@@ -41,7 +41,7 @@ class BaseViewCli:
     def prompt_for_selection_by_id(self, ids: [int], model_name: str) -> int:
         # Ask the user to choose an ID
         while True:
-            selected_id = click.prompt(f"Please enter the ID of the {model_name} you wish to modify.", type=int)
+            selected_id = click.prompt(f"Please enter the ID of the {model_name} you wish to select.", type=int)
             if selected_id in ids:
                 return selected_id
             else:
