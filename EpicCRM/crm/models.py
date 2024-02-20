@@ -51,6 +51,11 @@ class Contract(Model):
                        choices=CONTRACT_STATUS_CHOICES,
                        default='not_signed')  # Current status of the contract
 
+    class Meta:
+        permissions = [
+            ("manage_contracts_creation_modification", "Can create and modify contracts"),
+        ]
+
 
 class Event(Model):
     """
