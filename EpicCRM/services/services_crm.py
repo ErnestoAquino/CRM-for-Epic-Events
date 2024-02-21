@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 from django.db import DatabaseError
 from django.db.models.query import QuerySet
+from typing import Optional
 
 from datetime import datetime
 
@@ -364,6 +365,41 @@ class ServicesCRM:
         event.save()
 
         return event
+
+    @staticmethod
+    def get_all_events_with_optional_filter(support_contact_required: Optional[bool] = None) -> QuerySet[Event]:
+        """
+        Retrieves all events from the database with an optional filter based on the presence or absence of
+         a support contact.
+
+        Args:
+            support_contact_required (Optional[bool]): If True, only returns events with a support contact assigned.
+                                                        If False, returns events without a support contact assigned.
+                                                        If None, returns all events without any filter applied.
+
+        Returns:
+            QuerySet[Event]: A queryset of Event objects filtered based on the support_contact_required parameter.
+
+        Raises:
+            DatabaseError: If an issue occurs accessing the database.
+            Exception: For any unexpected error during the retrieval of events.
+        """
+
+        try:
+            events = Event.objects.all()
+            match support_contact_required:
+                case None:
+                    return events
+                case True:
+                    events = events.exclude(support_contact__isnull=True)
+                    return events
+                case False:
+                    events = events.filter(support_contact__isnull=True)
+                    return events
+        except DatabaseError as e:
+            raise DatabaseError("Problem with the database") from e
+        except Exception as e:
+            raise Exception("Unexpected error occurred while retrieving events.") from e
 
     def get_all_events(self) -> QuerySet[Event]:
         try:
