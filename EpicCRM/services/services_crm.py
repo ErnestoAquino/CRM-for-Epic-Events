@@ -206,21 +206,103 @@ class ServicesCRM:
             return Client.objects.none()
 
     def get_all_clients(self) -> QuerySet[Client]:
+        """
+        Retrieve all clients from the database.
+
+        Returns:
+            QuerySet: A queryset containing all clients.
+        """
         try:
+            # Attempt to retrieve all clients from the database
             return Client.objects.all()
-
         except DatabaseError as e:
-            print(f"Error: {e}")
-            return Contract.objects.none()
-
+            # Raise a new exception if there's a problem accessing the database
+            raise DatabaseError("Problem with database access") from e
         except Exception as e:
-            print(f"Error retrieving clients: {e}")
-            return Client.objects.none()
+            # Raise a generic exception if an unexpected error occurs
+            raise Exception("Unexpected error retrieving clients.") from e
 
     # ===================================== CONTRACTS SECTION =====================================
+    @staticmethod
+    def create_contract(client: Client, sales_contact: Collaborator, total_amount: float,
+                        amount_remaining: float, status: str) -> Contract:
+        """
+        Creates a new contract and saves it to the database.
+
+        This method creates a new contract object with the provided parameters,
+        saves it to the database, and returns the created contract instance.
+
+        Args:
+            client (Client): The client associated with the contract.
+            sales_contact (Collaborator): The sales contact associated with the contract.
+            total_amount (float): The total amount of the contract.
+            amount_remaining (float): The remaining amount to be paid on the contract.
+            status (str): The status of the contract.
+
+        Returns:
+            Contract: The newly created contract object.
+
+        Raises:
+            ValidationError: If there's a validation error during saving.
+            DatabaseError: If there's a problem accessing the database.
+            Exception: If an unexpected error occurs during contract creation.
+        """
+        try:
+            contract = Contract(
+                client=client,
+                sales_contact=sales_contact,
+                total_amount=total_amount,
+                amount_remaining=amount_remaining,
+                status=status
+            )
+            # Save the contract to the database
+            contract.save()
+            return contract
+        except ValidationError as e:
+            # Handle validation error
+            raise ValidationError(f"Validation error: {e}")
+        except DatabaseError as e:
+            # Handle database error
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            # Handle unexpected error
+            raise Exception("Unequal error retrieving contracts.") from e
+
+    @staticmethod
+    def modify_contract(contract: Contract, modifications: dict) -> Contract:
+        """
+        Modifies an existing contract with the provided data.
+
+        Args:
+            contract (Contract): Instance of the contract to modify.
+            modifications (dict): Dictionary with the fields to modify and their new values.
+
+        Returns:
+            Contract: The modified contract.
+
+        Raises:
+            ValidationError: If there's a validation error with the provided data.
+            DatabaseError: If there's an issue accessing the database.
+        """
+        try:
+            for key, value in modifications.items():
+                setattr(contract, key, value)
+
+            contract.full_clean()
+            contract.save()
+            return contract
+
+        except ValidationError as e:
+            raise ValidationError(f"Validation error while modifying the contract: {e}")
+        except DatabaseError as e:
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            raise Exception("Unexpected error modifying contracts.") from e
+
     def get_filtered_contracts_for_collaborator(self, collaborator_id: int,
                                                 filter_type: str = None) -> QuerySet[Contract]:
         try:
+            # Create a new contract instance
             clients = self.get_clients_for_collaborator(collaborator_id)
             contracts = Contract.objects.filter(client__in=clients)
 
@@ -240,14 +322,19 @@ class ServicesCRM:
             return Contract.objects.none()
 
     def get_all_contracts(self) -> QuerySet[Contract]:
+        """
+        Retrieve all contracts from the database.
+
+        Returns:
+            QuerySet: A queryset containing all contracts.
+        """
         try:
+            # Attempt retrieve all clients from the database
             return Contract.objects.all()
         except DatabaseError as e:
-            print(f"Error: {e}")
-            return Contract.objects.none()
+            raise DatabaseError("Problem with the database") from e
         except Exception as e:
-            print(f"Error retrieving contracts: {e}")
-            return Contract.objects.none()
+            raise Exception("Unexpected error occurred while retrieving contracts.") from e
 
     # ===================================== EVENTS SECTION =====================================
     @staticmethod
