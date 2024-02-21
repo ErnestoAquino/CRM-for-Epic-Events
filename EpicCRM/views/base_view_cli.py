@@ -84,7 +84,7 @@ class BaseViewCli:
         console = Console()
 
         # Create table
-        table = Table(title="List of all Events",
+        table = Table(title="List of Events",
                       show_header=True,
                       header_style="bold magenta",
                       expand=True,
