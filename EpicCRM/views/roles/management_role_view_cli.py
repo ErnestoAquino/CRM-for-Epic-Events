@@ -118,8 +118,8 @@ class ManagementRoleViewCli(BaseViewCli):
         # Print the table using Rich
         console.print(table)
 
-    def get_data_for_modify_collaborator(self) -> dict:
-        self.display_info_message("Modifying collaborator: {collaborator.username}. "
+    def get_data_for_modify_collaborator(self, full_name: str) -> dict:
+        self.display_info_message(f"Modifying collaborator: {full_name}. "
                                   "Leave blank any field you do not wish to modify.")
 
         modification_data = {}
@@ -143,5 +143,40 @@ class ManagementRoleViewCli(BaseViewCli):
         employee_number = self.get_valid_input_with_limit("New Employee Number (or leave blank)", 50, allow_blank=True)
         if employee_number:
             modification_data["employee_number"] = employee_number
+
+        return modification_data
+
+    def get_data_for_create_contract(self) -> dict:
+        self.display_info_message("Please provide the following information for the new contract:")
+
+        total_amount = self.get_valid_decimal_input("Total Amount (e.g., 9999.99)")
+        amount_remaining = self.get_valid_decimal_input("Amount Remaining (e.g., 9999.99)")
+        status = self.get_valid_choice("Status (Options: signed, not_signet)", ["signed", "not_signet"])
+
+        contract_data = {
+            "total_amount": total_amount,
+            "amount_remaining": amount_remaining,
+            "status": status
+        }
+
+        return contract_data
+
+    def get_data_for_modify_contract(self) -> dict:
+        modification_data = {}
+        self.display_info_message("Modifying contract... "
+                                  "Please leave blank any field you do not wish to modify")
+        total_amount = self.get_valid_decimal_input("Total Amount (e.g., 9999.99)", allow_blank=True)
+        if total_amount:
+            modification_data["total_amount"] = total_amount
+
+        amount_remaining = self.get_valid_decimal_input("Amount Remaining (e.g., 9999.99)", allow_blank=True)
+        if amount_remaining:
+            modification_data["amount_remaining"] = amount_remaining
+
+        status = self.get_valid_choice("Status (Options: signed, not_signed)",
+                                       ["signed", "not_signed"],
+                                       allow_blank=True)
+        if status:
+            modification_data["status"] = status
 
         return modification_data
