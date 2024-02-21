@@ -142,48 +142,6 @@ class SalesRoleViewCli(BaseViewCli):
 
         return client_data
 
-    def display_clients_for_selection(self, clients_queryset: QuerySet) -> None:
-        self.clear_screen()
-        # Create console instance
-        console = Console()
-
-        # Create table
-        table = Table(title="List of Available Clients", show_header=True, header_style="bold magenta", expand=True)
-        table.add_column("ID", style="dim", width=10)
-        table.add_column("Full Name", style="dim", width=20)
-
-        # Fill the table with clients data
-        for client in clients_queryset:
-            client_name = client.full_name if client.full_name else "No Name"
-
-            table.add_row(
-                str(client.id),
-                client_name
-            )
-
-        # Print the table using Rich
-        console.print(table)
-
-    def display_client_details(self, client: Client) -> None:
-        self.clear_screen()
-        console = Console()
-
-        # Create a table to display client details
-        table = Table(title="Client Detail", show_header=True, header_style="bold blue", show_lines=True)
-        table.add_column("Field", style="dim", width=20)
-        table.add_column("Value", width = 40)
-
-        # Add rows to the table with client details
-        table.add_row("Client ID", str(client.id))
-        table.add_row("Full Name", client.full_name)
-        table.add_row("Email", client.email)
-        table.add_row("Phone", client.phone)
-        table.add_row("Company Name", client.company_name)
-        table.add_row("Sales Contact", client.sales_contact.get_full_name() if client.sales_contact else "N/A")
-
-        # Print the table
-        console.print(table, justify="center")
-
     def prompt_for_client_modification(self) -> dict:
         modifications = {}
         self.display_info_message("Leave blank any field you do not wish to modify.")
@@ -237,56 +195,6 @@ class SalesRoleViewCli(BaseViewCli):
             break
 
         return modifications
-
-    def display_contracts_for_selection(self, contracts_queryset: QuerySet) -> None:
-        self.clear_screen()
-        # Create console instance
-        console = Console()
-
-        # Create table
-        table = Table(title="List of Available Contracts", show_header=True, header_style="bold magenta",
-                      expand=True)
-        table.add_column("Contract ID", style="dim", width=12)
-        table.add_column("Client Name", width=20)
-        table.add_column("Status", width=12)
-
-        # Fill the table with contracts data
-        for contract in contracts_queryset:
-            client_name = contract.client.full_name if contract.client.full_name else "No Name"
-            status = contract.get_status_display()
-
-            table.add_row(
-                str(contract.id),
-                client_name,
-                status
-            )
-
-        # Print the table using Rich
-        console.print(table)
-
-    def display_contract_details(self, contract: Contract) -> None:
-        console = Console()
-        self.clear_screen()
-
-        # Create a table to display contract details
-        table = Table(title="Contract Detail",
-                      show_header=True,
-                      header_style="bold blue",
-                      show_lines=True)
-
-        table.add_column("Field", style="dim", width=20)
-        table.add_column("Value", width=40)
-
-        # Add rows to the table with contract details
-        table.add_row("Contract ID", str(contract.id))
-        table.add_row("Client Information", contract.client.full_name + " - " + contract.client.email)
-        table.add_row("Sales Contact", contract.sales_contact.get_full_name() if contract.sales_contact else "N/A")
-        table.add_row("Total Amount", str(contract.total_amount))
-        table.add_row("Amount Remaining", str(contract.amount_remaining))
-        table.add_row("Creation Date", contract.creation_date.strftime("%Y-%m-%d"))
-        table.add_row("Status", "Signed" if contract.status == "signed" else "Not Signed")
-
-        console.print(table, justify="center")
 
     def prompt_for_contract_modification(self) -> dict:
         modifications = {}
@@ -374,8 +282,20 @@ class SalesRoleViewCli(BaseViewCli):
         return choice
 
     def get_data_for_add_new_event(self) -> dict:
+        """
+        Prompts the user for information to add a new event.
+
+        This method guides the user through providing information for a new event.
+        It prompts for the client name, event name, client contact, start and end dates,
+        location, number of attendees, and optional notes. It constructs and returns
+        a dictionary containing the collected event data.
+
+        Returns:
+            dict: A dictionary containing the collected event data.
+        """
         self.display_info_message("Please provide the following information for the new event")
 
+        # Requesting information for the new event.
         client_name = self.get_valid_input_with_limit("Client Name", 100)
         name = self.get_valid_input_with_limit("Name", 255)
         client_contact = self.get_valid_input_with_limit("Client Contact", 1000)
@@ -385,6 +305,7 @@ class SalesRoleViewCli(BaseViewCli):
         attendees = self.get_valid_input_positive_integer("Attendees")
         notes = click.prompt("Notes (optional)", default="", show_default=False).strip()
 
+        # Construct a dictionary containing the collected event data
         event_data = {
             "client_name": client_name,
             "name": name,
@@ -398,6 +319,19 @@ class SalesRoleViewCli(BaseViewCli):
         return event_data
 
     def get_valid_input_positive_integer(self, prompt_text: str) -> int:
+        """
+        Prompts the user for a positive integer input.
+
+        This method continuously prompts the user for an integer until a positive one is provided.
+        It checks if the input can be converted to an integer and if it's greater than zero.
+        Displays error messages for invalid input or non-positive integers.
+
+        Args:
+            prompt_text (str): The prompt text to be displayed to the user.
+
+        Returns:
+            int: The valid positive integer input.
+        """
         while True:
             user_input_str = click.prompt(prompt_text, default = "", show_default = False)
             try:
@@ -419,6 +353,17 @@ class SalesRoleViewCli(BaseViewCli):
             return user_input_int
 
     def get_valid_start_date(self) -> datetime:
+        """
+        Prompts the user for a valid start date, ensuring it's in the future.
+
+        This method continuously prompts the user for a start date until a valid one is provided.
+        It checks if the input can be parsed into a datetime object and if it's in the future.
+        Displays error messages for invalid input or start dates in the past.
+
+        Returns:
+            datetime: The valid start date.
+        """
+
         # Loop to ensure valid input for the start date.
         while True:
             start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
@@ -441,6 +386,20 @@ class SalesRoleViewCli(BaseViewCli):
             return make_aware(naive_start_date, get_default_timezone())
 
     def get_valid_end_date(self, start_date: datetime) -> datetime:
+        """
+         Prompts the user for a valid end date, ensuring it's after the provided start date.
+
+         This method continuously prompts the user for an end date until a valid one is provided.
+         It checks if the input can be parsed into a datetime object and if it's after the start date.
+         Displays error messages for invalid input or end dates before or equal to the start date.
+
+         Args:
+             start_date (datetime): The start date to compare the end date against.
+
+         Returns:
+             datetime: The valid end date.
+         """
+
         # Loop to ensure valid input for the end date.
         while True:
             end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
@@ -465,18 +424,24 @@ class SalesRoleViewCli(BaseViewCli):
             return aware_end_date
 
     def display_event_details(self, event: Event) -> None:
+        """
+        Displays the details of an event in a formatted table.
+        """
 
         console = Console()
         self.clear_screen()
 
+        # Create a table to display event details.
         table = Table(title = "Event Detail",
                       show_header = True,
                       header_style = "bold blue",
                       show_lines = True)
 
+        # Add columns to the table.
         table.add_column("Field", style = "dim", width = 20)
         table.add_column("Value", width = 40)
 
+        # Add rows to the table with event details.
         table.add_row("Event ID", str(event.id))
         table.add_row("Contract ID", str(event.contract.id))
         table.add_row("Client Name", event.client_name)
@@ -484,10 +449,13 @@ class SalesRoleViewCli(BaseViewCli):
         table.add_row("Client Contact", event.client_contact)
         table.add_row("Start Date", event.start_date.strftime("%Y-%m-%d %H:%M"))
         table.add_row("End Date", event.end_date.strftime("%Y-%m-%d %H:%M"))
+
+        # Get the full name of the support contact or display "N/A" if there is no contact.
         support_contact_name = event.support_contact.get_full_name() if event.support_contact else "N/A"
         table.add_row("Support Contact", support_contact_name)
         table.add_row("Location", event.location)
         table.add_row("Attendees", str(event.attendees))
         table.add_row("Notes", event.notes or "N/A")
 
+        # Print the table to the console, justifying the content to the center.
         console.print(table, justify = "center")
