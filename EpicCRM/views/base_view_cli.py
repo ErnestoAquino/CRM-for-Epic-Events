@@ -447,3 +447,55 @@ class BaseViewCli:
 
         # Print the table using Rich
         console.print(table)
+
+    # ==========================  Support Controller    ===============================
+
+    def display_events_for_selection(self, events_queryset: QuerySet) -> None:
+        # Create console instance
+        console = Console()
+
+        # Create table
+        table = Table(title="List of Available Events", show_header=True, header_style="bold magenta", expand=True)
+        table.add_column("ID", style="dim", width=10)
+        table.add_column("Name", style="dim", width=20)
+        table.add_column("Client Name", style="dim", width=20)
+        table.add_column("Support Contact", style = "dim", width = 20)
+
+        # Fill the table with events data
+        for event in events_queryset:
+            event_name = event.name if event.name else "No Name"
+            client_name = event.client_name
+            support_contact = event.support_contact.get_full_name() if event.support_contact else "N/A"
+
+            table.add_row(
+                str(event.id),
+                event_name,
+                client_name,
+                support_contact
+            )
+
+        # Print the table using Rich
+        console.print(table)
+
+    def display_event_details(self, event: Event) -> None:
+        console = Console()
+
+        # Create a table to display event details
+        table = Table(title="Event Detail", show_header=True, header_style="bold blue", show_lines=True)
+        table.add_column("Field", style="dim", width=20)
+        table.add_column("Value", width=40)
+
+        # Add rows to the table with event details
+        table.add_row("Event ID", str(event.id))
+        table.add_row("Name", event.name)
+        table.add_row("Client Name", event.client_name)
+        table.add_row("Client Contact", event.client_contact or "N/A")
+        table.add_row("Start Date", event.start_date.strftime("%Y-%m-%d %H:%M"))
+        table.add_row("End Date", event.end_date.strftime("%Y-%m-%d %H:%M"))
+        table.add_row("Location", event.location)
+        table.add_row("Attendees", str(event.attendees))
+        table.add_row("Support Contact", event.support_contact.get_full_name() if event.support_contact else "N/A")
+        table.add_row("Notes", event.notes or "N/A")
+
+        # Print the table
+        console.print(table, justify="center")
