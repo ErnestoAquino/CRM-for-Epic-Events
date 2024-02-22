@@ -221,7 +221,8 @@ class ManagementRoleController:
         # Initiate the modification process for the selected collaborator.
         self.modify_collaborator(selected_collaborator)
 
-    def select_collaborator_from(self, list_of_collaborators: List[Collaborator]) -> Optional[Collaborator]:
+    def select_collaborator_from(self, list_of_collaborators: List[Collaborator],
+                                 message: Optional[str] = None) -> Optional[Collaborator]:
         """
         Selects a collaborator from the given list of collaborators.
 
@@ -232,7 +233,7 @@ class ManagementRoleController:
 
         Args:
             list_of_collaborators (List[Collaborator]): The list of collaborators to choose from.
-
+            message (Optional[str]): An optional message to display before the selection. Default is None.
         Returns:
             Optional[Collaborator]: The selected collaborator, or None if not found.
         """
@@ -240,6 +241,9 @@ class ManagementRoleController:
 
         # Display the list of collaborators for user selection.
         self.view_cli.display_collaborators_for_selection(list_of_collaborators)
+
+        if message:
+            self.view_cli.display_info_message(message)
 
         # Retrieve the IDs of all collaborators in the list.
         collaborators_ids = [collaborator.id for collaborator in list_of_collaborators]
@@ -801,10 +805,113 @@ class ManagementRoleController:
 
         events = self.get_events_with_optional_filter(support_contact_required=None)
         if not events:
-            self.view_cli.display_info_message("There are no events available to display.")
+            return
 
-    def select_event_from(self, events: List[Event]) -> Optional[Event]:
-        pass
+        selected_event = self.select_event_from(events)
+        if not selected_event:
+            return
+
+        support_collaborators = self.get_support_collaborators()
+        if not support_collaborators:
+            return
+
+        selected_support_collaborator = self.select_collaborator_from(support_collaborators,
+                                                                      "Select the new support contact "
+                                                                      "for the event")
+
+        event_with_new_support_collaborator = self.add_support_contact_to_event(selected_event,
+                                                                                selected_support_collaborator)
+        self.view_cli.display_event_details(event_with_new_support_collaborator)
+        self.view_cli.display_info_message(f"The support contact {selected_support_collaborator.get_fullname()}"
+                                           f"has been correctly assigned to the event.")
+
+    def select_event_from(self, list_of_events: List[Event]) -> Optional[Event]:
+        """
+        Allows the user to select an event from a list.
+
+        This method displays a list of events to the user for selection.
+        It prompts the user to select an event and then retrieves the selected event from the list.
+        If the selected event is not found, it displays an error message.
+
+        Args:
+            list_of_events (List[Event]): The list of events from which the user will select.
+
+        Returns:
+            Optional[Event]: The selected event if found, otherwise None.
+        """
+        self.view_cli.clear_screen()
+
+        # Display the list of events for user selection
+        self.view_cli.display_events_for_selection(list_of_events)
+
+        # Retrieve the IDs of all events in the list.
+        events_ids = [event.id for event in list_of_events]
+
+        # Prompt the user to select a collaborators in the list.
+        self.view_cli.display_info_message("Select the event to which you want modify/add the support contact")
+        selected_event_id = self.view_cli.prompt_for_selection_by_id(events_ids, "Event")
+
+        # Find the selected event from the list based on selected event id.
+        selected_event = next((event for event in list_of_events if event.id == selected_event_id), None)
+
+        if not selected_event:
+            # If selected event is not found, display error message
+            self.view_cli.display_error_message("We couldn't find the event. Please try again later.")
+
+        # Return the selected event.
+        return selected_event
+
+    def get_support_collaborators(self) -> List[Collaborator]:
+        """
+        Retrieves all collaborators with support role from the CRM service.
+
+        If a database error occurs during retrieval, it displays an error message,
+        and returns an empty list.
+        If any other unexpected exception occurs, it displays an error message,
+        and returns an empty list.
+        If it finds no collaborators, it displays an information message.
+        Finally, it returns the list of support collaborators.
+
+        Returns:
+            List[Collaborator]: A list of all support collaborators retrieved from the CRM service.
+        """
+        try:
+            support_collaborators = self.services_crm.get_support_collaborators()
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+            return []
+        except Exception as e:
+            self.view_cli.display_error_message(str(e))
+            return []
+
+        if not support_collaborators:
+            # Display information message if no collaborators are found.
+            self.view_cli.display_info_message("There not support collaborators to display.")
+
+        return support_collaborators
+
+    def add_support_contact_to_event(self, event: Event, support_contact: Collaborator) -> Event:
+        """
+        Adds a support contact to an event.
+
+        This method attempts to add a support contact to the specified event.
+        It handles database errors and other unexpected exceptions.
+
+        Args:
+            event (Event): The event to which the support contact will be added.
+            support_contact (Collaborator): The support contact to be added.
+
+        Returns:
+            Event: The event object with the new support contact added, if successful.
+        """
+        try:
+            # Attempt to add the support contact to the event.
+            event_with_new_support_contact = self.services_crm.add_support_collaborator_to_event(event, support_contact)
+            return event_with_new_support_contact
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+        except Exception as e:
+            self.view_cli.display_error_message(srt(e))
 
 # ================================== 9 - Exit the CRM system.    =======================================================
     def exit_of_crm_system(self) -> None:
