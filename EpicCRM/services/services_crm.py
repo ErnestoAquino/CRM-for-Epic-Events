@@ -476,9 +476,10 @@ class ServicesCRM:
         """
         try:
             return Event.objects.filter(support_contact_id=collaborator_id)
+        except DatabaseError as e:
+            raise DatabaseError("Problem with the database access") from e
         except Exception as e:
             print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
-            return Event.objects.none()
 
     def modify_event_by_id(self, event_id: int, **kwargs) -> Event | None:
         """
@@ -512,6 +513,44 @@ class ServicesCRM:
             # TODO: Sentry
             print(f"Error modifying event {event_id}: {e}")
             return None
+
+    @staticmethod
+    def modify_event(event: Event, modifications: dict) -> Event:
+        """
+        Modifies an existing event with the provided data.
+
+        Args:
+            event (Event): Instance of the event to modify.
+            modifications (dict): Dictionary with the fields to modify and their new values.
+
+        Returns:
+            Event: The modified event.
+
+        Raises:
+            ValidationError: If there's a validation error with the provided data.
+            DatabaseError: If there's an issue accessing the database.
+            Exception: If an unexpected error occurs during the modification.
+        """
+        try:
+            # Apply modifications
+            for key, value in modifications.items():
+                setattr(event, key, value)
+
+            # Validate the event instance before saving
+            event.full_clean()
+            # Save the modified event to the database
+            event.save()
+            return event
+
+        except ValidationError as e:
+            # Reraise validation errors with additional context
+            raise ValidationError(f"Validation error while modifying the event: {e}")
+        except DatabaseError as e:
+            # Handle database access issues
+            raise DatabaseError("Problem with database access while modifying the event.") from e
+        except Exception as e:
+            # Handle unexpected errors
+            raise Exception(f"Unexpected error occurred while modifying the event: {e}")
 
     def get_event_by_id(self, event_id: int) -> Event | None:
         """
