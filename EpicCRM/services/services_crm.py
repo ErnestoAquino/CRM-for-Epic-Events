@@ -143,6 +143,27 @@ class ServicesCRM:
             raise Exception("Unexpected error retrieving collaborators.") from e
 
     @staticmethod
+    def get_support_collaborators() -> QuerySet[Collaborator]:
+        """
+        Retrieve all collaborators with the 'support' role from the database.
+
+        Returns:
+            A QuerySet of Collaborator instances who have the 'support' role.
+        Raises:
+            DatabaseError: If there's a problem accessing the database.
+            Exception: If an unexpected error occurs.
+        """
+        try:
+            support_collaborators = Collaborator.objects .filter(role__name="support")
+            return support_collaborators
+        except DatabaseError as e:
+            # Raise a new exception if there's a problem accessing the database
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            # Raise a generic exception if an unexpected error occurs
+            raise Exception("Unexpected error retrieving collaborators.") from e
+
+    @staticmethod
     def delete_collaborator(collaborator: Collaborator) -> None:
         """
         Deletes a collaborator from the database.
@@ -397,9 +418,41 @@ class ServicesCRM:
                     events = events.filter(support_contact__isnull=True)
                     return events
         except DatabaseError as e:
-            raise DatabaseError("Problem with the database") from e
+            raise DatabaseError("Problem with the database access during the retrieval of events.") from e
         except Exception as e:
             raise Exception("Unexpected error occurred while retrieving events.") from e
+
+    @staticmethod
+    def add_support_contact_to_event(event: Event, support_contact: Collaborator) -> Event:
+        """
+        Assigns a support collaborator to an event and returns the modified event.
+
+        Args:
+            event (Event): The event to assign the support collaborator to.
+            support_contact (Collaborator): The collaborator to be assigned as support.
+
+        Returns:
+            Event: The modified event with the new support contact assigned.
+
+        Raises:
+            DatabaseError: If there's a problem accessing the database.
+            Exception: If an unexpected error occurs during the assignment.
+        """
+        try:
+            # Assign the support collaborator to the event
+            event.support_contact = support_contact
+
+            # Validate changes
+            event.full_clean()
+
+            # Save the event with the new support contact
+            event.save()
+            return event
+
+        except DatabaseError as e:
+            raise DatabaseError("Problem with the database access during the support contact assignment") from e
+        except Exception as e:
+            raise Exception("Unexpected error occurred during the support contact assignment") from e
 
     def get_all_events(self) -> QuerySet[Event]:
         try:
