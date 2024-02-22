@@ -79,11 +79,11 @@ class ManagementRoleController:
                 # Assign or change the 'support' collaborator associated with an event.
                 self.process_modify_support_contact_in_event()
             case 5:
-                # TODO: View the list of all clients.
-                pass
+                # View the list of all clients.
+                self.show_all_clients()
             case 6:
-                # TODO:View the list of all contracts.
-                pass
+                # View the list of all contracts.
+                self.show_all_contracts()
             case 7:
                 # TODO: View the list of all events.
                 pass
@@ -801,28 +801,50 @@ class ManagementRoleController:
 
 # ================================== 4 - Assign Support Contact to event.  =============================================
     def process_modify_support_contact_in_event(self) -> None:
+        """
+        Handles the modification of the support contact in an event.
+
+        This method guides the user through the process of modifying the support contact in an event.
+        It retrieves a list of events. If no events are found, it returns.
+        Otherwise, it prompts the user to select an event from the list.
+        It then retrieves a list of support collaborators, it prompts the user to select a support collaborator.
+        Finally, it adds the selected support collaborator to the selected event, displays the details of the
+        modified event, and informs the user that the support contact has been correctly assigned.
+
+        Returns:
+            None
+        """
         self.view_cli.clear_screen()
 
+        # Retrieve a list of events
         events = self.get_events_with_optional_filter(support_contact_required=None)
         if not events:
             return
 
+        # Prompt the user to select an event from the list.
         selected_event = self.select_event_from(events)
         if not selected_event:
             return
 
+        # Retrieve a list of support collaborators.
         support_collaborators = self.get_support_collaborators()
         if not support_collaborators:
             return
 
+        # Prompt the user to select a support collaborator.
         selected_support_collaborator = self.select_collaborator_from(support_collaborators,
                                                                       "Select the new support contact "
                                                                       "for the event")
 
+        # Add the selected support collaborator to the selected event.
         event_with_new_support_collaborator = self.add_support_contact_to_event(selected_event,
                                                                                 selected_support_collaborator)
+
+        # Display the details of the modified event.
         self.view_cli.display_event_details(event_with_new_support_collaborator)
-        self.view_cli.display_info_message(f"The support contact {selected_support_collaborator.get_fullname()}"
+
+        # Inform the user that the support contact has been correctly assigned to the event.
+        self.view_cli.display_info_message(f"The support contact {selected_support_collaborator.get_full_name()}"
                                            f"has been correctly assigned to the event.")
 
     def select_event_from(self, list_of_events: List[Event]) -> Optional[Event]:
@@ -906,14 +928,101 @@ class ManagementRoleController:
         """
         try:
             # Attempt to add the support contact to the event.
-            event_with_new_support_contact = self.services_crm.add_support_collaborator_to_event(event, support_contact)
+            event_with_new_support_contact = self.services_crm.add_support_contact_to_event(event, support_contact)
             return event_with_new_support_contact
         except DatabaseError:
             self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
         except Exception as e:
             self.view_cli.display_error_message(srt(e))
 
-# ================================== 9 - Exit the CRM system.    =======================================================
+# ================================== 5 - View all clients.       =======================================================
+    def show_all_clients(self) -> None:
+        """
+        Displays the list of all clients.
+
+        This method first checks if the current collaborator has permission to view the client list.
+        If permission is granted, it retrieves the list of all clients and displays them.
+        If no clients are found or if the collaborator does not have permission, it returns.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view clients.
+        if not self.collaborator.has_perm("crm.view_client"):
+            self.display_info_message("You do not have permission to view the list of clients.")
+            return
+
+        # Retrieve the list of all clients.
+        clients = self.get_all_clients()
+
+        # If no clients are found, return
+        if not clients:
+            return
+
+        # Display the list of clients.
+        self.view_cli.display_list_of_clients(clients)
+
+# ================================== 6 - View all contracts.     =======================================================
+    def show_all_contracts(self) -> None:
+        """
+        Displays the list of all contracts.
+
+        This method checks if the current collaborator has permission to view the list of contracts.
+        If permission is granted, it retrieves the list of all contracts
+        and displays them. If no contracts are found or if the collaborator does not have permission,
+        it returns without displaying anything.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view contracts
+        if not self.collaborator.has_perm("crm.view_contract"):
+            self.view_cli.display_info_message("You do not have permission to view the list of contracts.")
+
+        # Retrieve the list of all contracts
+        contracts = self.get_all_contracts()
+
+        # If not contracts are found, return
+        if not contracts:
+            return
+
+        # Display the list of contracts
+        self.view_cli.display_list_of_contracts(contracts)
+
+# ================================== 7 - View all events.        =======================================================
+    def show_all_events(self) -> None:
+        """
+        Displays the list of all events.
+
+        This method first checks if the current collaborator has permission to view the list of events.
+        If permission is granted, it retrieves the list of all events and displays them.
+        If no events are found or if the collaborator does not have permission,
+        it returns without displaying anything.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view events
+        if not self.collaborator.has_perm("crm.view_event"):
+            self.view_cli.display_info_message("You do not have permission to view the list of events.")
+
+        # Retrieve the list of all events
+        events = self.get_events_with_optional_filter()
+
+        # If not events are found, return
+        if not events:
+            return
+
+        # Display the list of events
+        self.view_cli.display_list_of_events(events)
+
+# ================================== 8 - Exit the CRM system.    =======================================================
     def exit_of_crm_system(self) -> None:
         self.view_cli.clear_screen()
         self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
