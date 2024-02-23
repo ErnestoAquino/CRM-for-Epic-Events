@@ -1,5 +1,7 @@
 from django.core.exceptions import PermissionDenied
 from django.db import DatabaseError
+from sentry_sdk import capture_message
+from sentry_sdk import capture_exception
 from typing import List
 from typing import Optional
 
@@ -66,6 +68,10 @@ class SupportRoleController:
                 self.exit_of_crm_system()
                 return
             case _:
+                capture_message(
+                    f"Invalid menu option selected: {choice}. in start() at support controller"
+                    f"Expected options were between 1 and 6.",
+                    level = 'error')
                 self.view_cli.display_error_message("Invalid option selected. Please try again.")
                 self.start()
 
@@ -95,6 +101,8 @@ class SupportRoleController:
 
         # Check if the collaborator has permission to view clients.
         if not self.collaborator.has_perm("crm.view_client"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of clients", level="info")
             self.display_info_message("You do not have permission to view the list of clients.")
             return
 
@@ -153,6 +161,8 @@ class SupportRoleController:
 
         # Check if the collaborator has permission to view contracts
         if not self.collaborator.has_perm("crm.view_contract"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of contracts", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of contracts.")
 
         # Retrieve the list of all contracts
@@ -206,6 +216,8 @@ class SupportRoleController:
 
         # Check if the collaborator has permission to view events
         if not self.collaborator.has_perm("crm.view_event"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of events", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of events.")
 
         # Retrieve the list of all events
@@ -262,6 +274,8 @@ class SupportRoleController:
         self.view_cli.clear_screen()
 
         if not self.collaborator.has_perm("crm.view_event"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of events for the collaborator.", level="info")
             self.view_cli.display_error_message("You do not have permission to view the list of events.")
             return
 
