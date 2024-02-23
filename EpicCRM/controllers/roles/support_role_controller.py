@@ -103,7 +103,7 @@ class SupportRoleController:
         if not self.collaborator.has_perm("crm.view_client"):
             capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
                             f" to the list of clients", level="info")
-            self.display_info_message("You do not have permission to view the list of clients.")
+            self.view_cli.display_info_message("You do not have permission to view the list of clients.")
             return
 
         # Retrieve the list of all clients.
@@ -164,6 +164,7 @@ class SupportRoleController:
             capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
                             f" to the list of contracts", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of contracts.")
+            return
 
         # Retrieve the list of all contracts
         contracts = self.get_all_contracts()
@@ -219,6 +220,7 @@ class SupportRoleController:
             capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
                             f" to the list of events", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of events.")
+            return
 
         # Retrieve the list of all events
         events = self.get_events_with_optional_filter()
