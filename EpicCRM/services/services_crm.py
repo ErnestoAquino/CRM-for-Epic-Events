@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.db import DatabaseError
 from django.db.models.query import QuerySet
 from typing import Optional
-
+from sentry_sdk import capture_exception
 from datetime import datetime
 
 from crm.models import Collaborator
@@ -40,7 +40,7 @@ class ServicesCRM:
         if Collaborator.objects.filter(email=email).exists():
             raise ValidationError(f"The email: {email} is already in use.")
 
-        # Check if employee number is already in user
+        # Check if the employee number is already in user
         if Collaborator.objects.filter(employee_number=employee_number).exists():
             raise ValidationError(f"The employee number: {employee_number} is already in use.")
 
@@ -116,10 +116,13 @@ class ServicesCRM:
             collaborator.save()
 
         except ValidationError as e:
+            capture_exception(e)
             raise ValidationError(f"Validation error: {e}") from e
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             raise Exception("Unexpected error updating collaborator.") from e
 
         return collaborator
@@ -136,9 +139,11 @@ class ServicesCRM:
             # Attempt to retrieve all collaborators who are not superusers
             return Collaborator.objects.exclude(is_superuser=True)
         except DatabaseError as e:
+            capture_exception(e)
             # Raise a new exception if there's a problem accessing the database
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error retrieving collaborators.") from e
 
@@ -157,9 +162,11 @@ class ServicesCRM:
             support_collaborators = Collaborator.objects .filter(role__name="support")
             return support_collaborators
         except DatabaseError as e:
+            capture_exception(e)
             # Raise a new exception if there's a problem accessing the database
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error retrieving collaborators.") from e
 
@@ -179,9 +186,11 @@ class ServicesCRM:
             # Attempt to delete the collaborator
             collaborator.delete()
         except DatabaseError as e:
+            capture_exception(e)
             # Raise a new exception if there's a problem accessing the database
             raise DatabaseError(f"Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error deleting collaborator") from e
 
@@ -224,6 +233,7 @@ class ServicesCRM:
         try:
             return Client.objects.filter(sales_contact_id=collaborator_id)
         except Exception as e:
+            capture_exception(e)
             print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
             return Client.objects.none()
 
@@ -238,9 +248,11 @@ class ServicesCRM:
             # Attempt to retrieve all clients from the database
             return Client.objects.all()
         except DatabaseError as e:
+            capture_exception(e)
             # Raise a new exception if there's a problem accessing the database
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error retrieving clients.") from e
 
@@ -281,12 +293,15 @@ class ServicesCRM:
             contract.save()
             return contract
         except ValidationError as e:
+            capture_exception(e)
             # Handle validation error
             raise ValidationError(f"Validation error: {e}")
         except DatabaseError as e:
+            capture_exception(e)
             # Handle database error
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             # Handle unexpected error
             raise Exception("Unequal error retrieving contracts.") from e
 
@@ -315,10 +330,13 @@ class ServicesCRM:
             return contract
 
         except ValidationError as e:
+            capture_exception(e)
             raise ValidationError(f"Validation error while modifying the contract: {e}")
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with database access") from e
         except Exception as e:
+            capture_exception(e)
             raise Exception("Unexpected error modifying contracts.") from e
 
     def get_filtered_contracts_for_collaborator(self, collaborator_id: int,
@@ -340,6 +358,7 @@ class ServicesCRM:
 
             return contracts
         except Exception as e:
+            capture_exception(e)
             print(f"An unexpected error occurred while retrieving contracts for collaborator ID {collaborator_id}: {e}")
             return Contract.objects.none()
 
@@ -354,8 +373,10 @@ class ServicesCRM:
             # Attempt retrieve all clients from the database
             return Contract.objects.all()
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with the database") from e
         except Exception as e:
+            capture_exception(e)
             raise Exception("Unexpected error occurred while retrieving contracts.") from e
 
     # ===================================== EVENTS SECTION =====================================
@@ -394,9 +415,9 @@ class ServicesCRM:
          a support contact.
 
         Args:
-            support_contact_required (Optional[bool]): If True, only returns events with a support contact assigned.
-                                                        If False, returns events without a support contact assigned.
-                                                        If None, returns all events without any filter applied.
+            support_contact_required(Optional[bool]):If True, return events with a support contact assigned.
+                                                     If False, return events without a support contact assigned.
+                                                     If None, returns all events without any filter applied.
 
         Returns:
             QuerySet[Event]: A queryset of Event objects filtered based on the support_contact_required parameter.
@@ -418,8 +439,10 @@ class ServicesCRM:
                     events = events.filter(support_contact__isnull=True)
                     return events
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with the database access during the retrieval of events.") from e
         except Exception as e:
+            capture_exception(e)
             raise Exception("Unexpected error occurred while retrieving events.") from e
 
     @staticmethod
@@ -450,17 +473,21 @@ class ServicesCRM:
             return event
 
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with the database access during the support contact assignment") from e
         except Exception as e:
+            capture_exception(e)
             raise Exception("Unexpected error occurred during the support contact assignment") from e
 
     def get_all_events(self) -> QuerySet[Event]:
         try:
             return Event.objects.all()
         except DatabaseError as e:
+            capture_exception(e)
             print(f"Error: {e}")
             return Event.objects.none()
         except Exception as e:
+            capture_exception(e)
             print(f"Error retrieving events: {e}")
             return Event.objects.none()
 
@@ -477,8 +504,10 @@ class ServicesCRM:
         try:
             return Event.objects.filter(support_contact_id=collaborator_id)
         except DatabaseError as e:
+            capture_exception(e)
             raise DatabaseError("Problem with the database access") from e
         except Exception as e:
+            capture_exception(e)
             print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
 
     def modify_event_by_id(self, event_id: int, **kwargs) -> Event | None:
@@ -505,12 +534,12 @@ class ServicesCRM:
             event.save()
 
             return event  # Returns the modified event.
-        except Event.DoesNotExist:
-            # TODO: Sentry
+        except Event.DoesNotExist as e:
+            capture_exception(e)
             print(f"No event found with id: {event_id}")
             return None
         except Exception as e:
-            # TODO: Sentry
+            capture_exception(e)
             print(f"Error modifying event {event_id}: {e}")
             return None
 
@@ -543,12 +572,15 @@ class ServicesCRM:
             return event
 
         except ValidationError as e:
+            capture_exception(e)
             # Reraise validation errors with additional context
             raise ValidationError(f"Validation error while modifying the event: {e}")
         except DatabaseError as e:
+            capture_exception(e)
             # Handle database access issues
             raise DatabaseError("Problem with database access while modifying the event.") from e
         except Exception as e:
+            capture_exception(e)
             # Handle unexpected errors
             raise Exception(f"Unexpected error occurred while modifying the event: {e}")
 
@@ -563,9 +595,11 @@ class ServicesCRM:
         """
         try:
             return Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
+        except Event.DoesNotExist as e:
+            capture_exception(e)
             print(f"No event found with id: {event_id}")
             return None
         except Exception as e:
+            capture_exception(e)
             print(f"Error retrieving event {event_id}: {e}")
             return None
