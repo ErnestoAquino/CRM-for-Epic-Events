@@ -1,5 +1,21 @@
 import os
 import django
+import sentry_sdk
+import json
+
+secrets_file_path = os.path.join(os.path.dirname(__file__), 'secrets.json')
+
+with open(secrets_file_path) as secret_file:
+    secrets = json.load(secret_file)
+
+sentry_dsn = secrets.get("SENTRY_DSN")
+
+# Inicializa Sentry al comienzo de tu archivo
+sentry_sdk.init(
+    dsn = sentry_dsn,
+    traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,
+)
 
 
 def setup_django():
@@ -20,4 +36,5 @@ def main():
 
 
 if __name__ == "__main__":
+    # division_by_zero = 1 / 0
     main()
