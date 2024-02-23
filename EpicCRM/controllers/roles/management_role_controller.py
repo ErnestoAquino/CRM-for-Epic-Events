@@ -1,5 +1,6 @@
 from typing import Optional
 from typing import List
+from sentry_sdk import capture_message
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError
 from django.db.models.query import QuerySet
@@ -85,13 +86,17 @@ class ManagementRoleController:
                 # View the list of all contracts.
                 self.show_all_contracts()
             case 7:
-                # TODO: View the list of all events.
-                pass
+                # View the list of all events.
+                self.show_all_events()
             case 8:
                 #  Exit the CRM system.
                 self.exit_of_crm_system()
                 return
             case _:
+                capture_message(
+                    f"Invalid menu option selected: {choice}. in start() - management controller."
+                    f"Expected options were between 1 and {len(self.MAIN_MENU_OPTIONS)}.",
+                    level = 'error')
                 self.view_cli.display_error_message("Invalid option selected. Please try again.")
 
         # Asks the collaborator if they want to continue using the system.
@@ -122,10 +127,12 @@ class ManagementRoleController:
         # Check if the collaborator has the "manage_collaborator" permission which allows CRUD operations on
         # collaborators.
         if not self.collaborator.has_perm("crm.manage_collaborators"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to manage collaborators", level="info")
             self.view_cli.display_error_message("You do not have permission to manage collaborators.")
             return
 
-        # Shows the sub menu for manage collaborators
+        # Shows the submenu for manage collaborators
         self.view_cli.show_menu(self.collaborator.get_full_name(), self.SUB_MENU_MANAGE_COLLABORATORS)
 
         # captures their choice.
@@ -142,9 +149,13 @@ class ManagementRoleController:
                 #  Delete a collaborator in the CRM system
                 self.process_collaborator_removal()
             case 4:
-                # Return to main menu
+                # Return to the main menu
                 self.start()
             case _:
+                capture_message(
+                    f"Invalid menu option selected: {choice}. in manage_collaborators() - management controller."
+                    f"Expected options were between 1 and {len(self.SUB_MENU_MANAGE_COLLABORATORS)}.",
+                    level = 'error')
                 self.view_cli.display_info_message("Invalid option selected. Please try again.")
                 return
 
@@ -169,7 +180,7 @@ class ManagementRoleController:
                 # Attempt to register the new collaborator with the provided data.
                 collaborator = self.services_crm.register_collaborator(**data_collaborator)
 
-                # If registration is successful,display the details of the newly registered collaborator.
+                # If registration is successful, display the details of the newly registered collaborator.
                 self.view_cli.clear_screen()
                 self.view_cli.display_collaborator_details(collaborator)
                 self.view_cli.display_info_message("User registered successfully!")
@@ -227,7 +238,7 @@ class ManagementRoleController:
         Selects a collaborator from the given list of collaborators.
 
         Clears the screen and displays the list of collaborators for selection.
-        Retrieves the IDs of all collaborators in the list.
+        Retrieve the IDs of all collaborators in the list.
         Prompts the user to select a collaborator by ID.
         Returns the selected collaborator from the list, if found.
 
@@ -287,7 +298,7 @@ class ManagementRoleController:
             return []
 
         if not collaborators:
-            # Display information message if no collaborators are found.
+            # Display an information message if no collaborators are found.
             self.view_cli.display_info_message("There are no collaborators available to display.")
 
         return collaborators
@@ -419,10 +430,12 @@ class ManagementRoleController:
         # Check if the collaborator has the "manage_contracts_creation_modification" permission
         # which allows modification and update operations on contracts.
         if not self.collaborator.has_perm("crm.manage_contracts_creation_modification"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to manage_contracts", level="info")
             self.view_cli.display_error_message("You do not have permission to manage contracts.")
             return
 
-        # Shows the sub menu for manage contracts.
+        # Shows the submenu for manage contracts.
         self.view_cli.show_menu(self.collaborator.get_full_name(), self.SUB_MENU_MANAGE_CONTRACTS)
 
         # captures their choice.
@@ -430,15 +443,19 @@ class ManagementRoleController:
 
         match choice:
             case 1:
-                # Create  a contract in the CRM system
+                # Create a contract in the CRM system
                 self.process_contract_creation()
             case 2:
                 #  Update a contract in the CRM system
                 self.process_contract_modification()
             case 3:
-                # Return to main menu
+                # Return to the main menu
                 self.start()
             case _:
+                capture_message(
+                    f"Invalid menu option selected: {choice}. in manage_contract() - management controller."
+                    f"Expected options were between 1 and {len(self.SUB_MENU_MANAGE_CONTRACTS)}.",
+                    level = 'error')
                 self.view_cli.display_info_message("Invalid option selected. Please try again.")
                 return
 
@@ -520,7 +537,7 @@ class ManagementRoleController:
         # Extract client IDs for selection
         clients_ids = [client.id for client in clients]
 
-        # Prompt user to select client by ID
+        # Prompt user to select a client by ID
         selected_client_id = self.view_cli.prompt_for_selection_by_id(clients_ids, "Client")
 
         # Find the selected client by ID
@@ -703,10 +720,12 @@ class ManagementRoleController:
 
         # Check if the collaborator has the "view_event" permission.
         if not self.collaborator.has_perm("crm.view_event"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to list of events in manage events.", level="info")
             self.view_cli.display_error_message("You do not have permission to view events.")
             return
 
-        # Show sub menu for display events
+        # Show submenu for display events
         self.view_cli.show_menu(self.collaborator.get_full_name(), self.SUB_MENU_EVENTS)
 
         # Captures their choice
@@ -722,10 +741,14 @@ class ManagementRoleController:
                 self.show_events_without_support_contact_assigned()
                 pass
             case 3:
-                # Return to main menu
+                # Return to the main menu
                 self.start()
             case _:
                 self.view_cli.display_info_message("Invalid option selected. Please try again.")
+                capture_message(
+                    f"Invalid menu option selected: {choice}. "
+                    f"Expected options were between 1 and {len(self.SUB_MENU_EVENTS)}.",
+                    level = 'error')
                 return
 
     def show_events_with_support_contact_assigned(self) -> None:
@@ -907,7 +930,7 @@ class ManagementRoleController:
             return []
 
         if not support_collaborators:
-            # Display information message if no collaborators are found.
+            # Display an information message if no collaborators are found.
             self.view_cli.display_info_message("There not support collaborators to display.")
 
         return support_collaborators
@@ -951,6 +974,8 @@ class ManagementRoleController:
 
         # Check if the collaborator has permission to view clients.
         if not self.collaborator.has_perm("crm.view_client"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of clients", level="info")
             self.display_info_message("You do not have permission to view the list of clients.")
             return
 
@@ -981,6 +1006,8 @@ class ManagementRoleController:
 
         # Check if the collaborator has permission to view contracts
         if not self.collaborator.has_perm("crm.view_contract"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of contract", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of contracts.")
 
         # Retrieve the list of all contracts
@@ -1010,6 +1037,8 @@ class ManagementRoleController:
 
         # Check if the collaborator has permission to view events
         if not self.collaborator.has_perm("crm.view_event"):
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of events", level="info")
             self.view_cli.display_info_message("You do not have permission to view the list of events.")
 
         # Retrieve the list of all events
