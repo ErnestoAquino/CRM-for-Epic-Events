@@ -1,6 +1,7 @@
 from django.db import IntegrityError
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
+from sentry_sdk import capture_message
 
 from crm.models import Collaborator
 from crm.models import Client
@@ -18,6 +19,13 @@ class SalesRoleController:
         self.view_cli = view_cli
 
     def start(self):
+        """
+        Starts the CRM system and displays the main menu to the collaborator.
+
+        This method displays the main menu options to the collaborator and captures their choice.
+        It then performs the corresponding action based on the selected choice. After completing
+        the action, it prompts the collaborator if they want to continue using the system.
+        """
         name_to_display = self.collaborator.get_full_name() or collaborator.username
 
         # Shows the main menu to the collaborator
@@ -58,6 +66,12 @@ class SalesRoleController:
                 # Exit the CRM system.
                 self.exit_of_crm_system()
                 return
+            case _:
+                capture_message(
+                    f"Invalid menu option selected: {choice}. in start() - sales controller."
+                    f"Expected options were between 1 and 9",
+                    level = 'error')
+                self.view_cli.display_error_message("Invalid option selected. Please try again.")
 
         # Asks the collaborator if they want to continue using the system.
         continue_operation = self.view_cli.ask_user_if_continue()
@@ -70,23 +84,49 @@ class SalesRoleController:
         # Restarts the start method to prompt the collaborator for another choice.
         self.start()
 
-    # ================== 1 - Create a new client.    =======================
-    def create_new_client(self):
+# ====================== 1 - Create a new client.    ===================================================================
+    def create_new_client(self) -> None:
+        """
+        Handles the creation of a new client in the CRM system.
+
+        This method checks if the collaborator has permission to add a new client.
+        Retrieves data for the new client from the view, assigns the sales contact to the new client,
+        attempts to create the new client using the CRM service, and displays appropriate success or
+        error messages.
+
+        Returns:
+            None
+        """
         self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to add a new client.
         if not self.collaborator.has_perm("crm.add_client"):
+            # Log an unauthorized access attempt.
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to create new client", level="info")
+            # Display error message and return if permission is not granted.
             self.view_cli.display_error_message("You do not have permission to add a new client.")
+            return
+
+        # Get data for the new client
         client_data = self.view_cli.get_data_for_add_new_client()
+        # Assign the sales contact to the new client.
         client_data['sales_contact'] = self.collaborator
 
         try:
+            # Attempt to create the new client
             new_client = self.services_crm.create_client(**client_data)
             self.view_cli.clear_screen()
+
+            # Display success message and client details.
             self.view_cli.display_info_message(f"Client {new_client.full_name} created successfully.")
             self.view_cli.display_client_details(new_client)
         except ValidationError as e:
-            self.view_cli.display_error_message(str(e))
+            self.view_cli.display_error_message(f"Validation error: {e}")
+        except DatabaseError:
+            self.view_cli.display_error_message(f"I encountered a problem with the database. Please try again later.")
         except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+            self.view_cli.display_error_message(str(e))
 
     # ================== 2 - Update client information.    =================
     def start_modification_client_process(self):
