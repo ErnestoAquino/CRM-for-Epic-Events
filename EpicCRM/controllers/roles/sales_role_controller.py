@@ -1,7 +1,10 @@
 from django.db import IntegrityError
+from django.db import DatabaseError
 from django.db.models.query import QuerySet
 from django.core.exceptions import ValidationError
 from sentry_sdk import capture_message
+from typing import List
+from typing import Optional
 
 from crm.models import Collaborator
 from crm.models import Client
@@ -40,7 +43,7 @@ class SalesRoleController:
                 self.create_new_client()
             case 2:
                 #  Update client information.
-                self.start_modification_client_process()
+                self.process_client_modification()
             case 3:
                 # Modify/Update clients contracts.
                 self.process_contract_modification()
@@ -129,43 +132,104 @@ class SalesRoleController:
             self.view_cli.display_error_message(str(e))
 
     # ================== 2 - Update client information.    =================
-    def start_modification_client_process(self):
-        selected_client = self.get_client_for_modification()
-        if not selected_client:
-            self.view_cli.display_warning_message("Modification process cancelled.")
-            return
-        self.modify_client(selected_client)
+    def process_client_modification(self) -> None:
+        """
+        Process the modification of a client.
 
-    def get_client_for_modification(self) -> Client | None:
+        This method retrieves the list of clients assigned to the current collaborator,
+        prompts the user to select a client for modification, and then initiates the modification
+        process for the selected client.
+
+        Returns:
+            None
+        """
         self.view_cli.clear_screen()
 
-        if not self.collaborator.has_perm("crm.view_client"):
-            self.view_cli.display_error_message("You do not have permission to view the clients")
-            return None
+        # Retrieve the clients assigned to the current collaborator.
+        clients = self.get_clients_for_collaborator(self.collaborator)
+        if not clients:
+            return
 
+        # Select client for modification
+        selected_client_for_modification = self.select_client_from(clients)
+        if not selected_client_for_modification:
+            return
+
+        self.modify_client(selected_client_for_modification)
+
+    def get_clients_for_collaborator(self, collaborator: Collaborator) -> List[Client]:
+        """
+        Retrieve the list of clients assigned to a specific collaborator.
+
+        Args:
+            collaborator (Collaborator): The collaborator for whom to retrieve the clients.
+
+        Returns:
+            List[Client]: The list of clients assigned to the collaborator.
+
+        """
         try:
-            clients = self.services_crm.get_clients_for_collaborator(self.collaborator.id)
-            self.view_cli.display_clients_for_selection(clients)
+            # Attempt to retrieve clients associated with the given collaborator.
+            clients = self.services_crm.get_clients_for_collaborator(collaborator.id)
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+            return []
         except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
-            return None
+            self.view_cli.display_error_message(str(e))
+            return []
 
         if not clients:
-            self.view_cli.display_info_message(f"No clients assigned to you.")
-            return None
+            # Display a message if there are no clients available.
+            self.view_cli.display_info_message("There are no clients available to display.")
 
-        clients_id = [client.id for client in clients]
-        selected_client_id = self.view_cli.prompt_for_selection_by_id(clients_id, "Client")
+        # Return the list of clients.
+        return clients
 
-        selected_client = next((client for client in clients if client.id == selected_client_id), None)
+    def select_client_from(self, list_of_clients: List[Client]) -> Optional[Client]:
+        """
+        Prompt the user to select a client from a list of clients.
+
+        Args:
+            list_of_clients (List[Client]): List of clients to choose from.
+
+        Returns:
+            Optional[Client]: The selected client, or None if not found.
+
+        """
+        self.view_cli.clear_screen()
+
+        # Display the list of clients for selection
+        self.view_cli.display_clients_for_selection(list_of_clients)
+
+        # Retrieve the IDs of all collaborators in the list.
+        clients_ids = [client.id for client in list_of_clients]
+
+        # Prompt the user to select a client by ID.
+        selected_client_id = self.view_cli.prompt_for_selection_by_id(clients_ids, "Client")
+
+        # Find the selected client from the list
+        selected_client = next((client for client in list_of_clients if client.id == selected_client_id), None)
 
         if not selected_client:
-            self.view_cli.display_error_message("Selected client not found.")
-            return None
+            # If the select client is not found, display an error message
+            self.view_cli.display_error_message("We couldn't find the client. Please try again later.")
 
+        # Return the selected client
         return selected_client
 
     def modify_client(self, client: Client) -> None:
+        """
+        Modify a client.
+
+        This method displays the details of the client to be modified,
+        prompts the user for modifications, and attempts to modify the client using the provided data.
+
+        Args:
+            client (Client): The client to be modified.
+
+        Returns:
+            None
+        """
         # Clears the screen before proceeding.
         self.view_cli.clear_screen()
 
@@ -179,15 +243,18 @@ class SalesRoleController:
             self.view_cli.display_info_message("No modifications were made.")
             return
 
-        # Applies the modifications to the client object.
-        for field, value in modifications.items():
-            setattr(client, field, value)
-
-        # Saves the modified client.
-        client.save()
-
-        # Informs the client was updated successfully.
-        self.view_cli.display_info_message("Client updated successfully.")
+        try:
+            # Attempts to modify the client using the provided data
+            client_modified = self.services_crm.modify_client(client, modifications)
+            self.view_cli.clear_screen()
+            self.view_cli.display_client_details(client_modified)
+            self.view_cli.display_info_message("The client has been modified successfully.")
+        except ValidationError as e:
+            self.view_cli.display_error_message(str(e))
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again.")
+        except Exception as e:
+            self.view_cli.display_error_message(str(e))
 
     # ================== 3 - Modify/Update clients contracts.===============
     def process_contract_modification(self) -> None:
