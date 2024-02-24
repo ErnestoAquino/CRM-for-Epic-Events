@@ -10,7 +10,6 @@ with open(secrets_file_path) as secret_file:
 
 sentry_dsn = secrets.get("SENTRY_DSN")
 
-# Inicializa Sentry al comienzo de tu archivo
 sentry_sdk.init(
     dsn = sentry_dsn,
     traces_sample_rate=1.0,
