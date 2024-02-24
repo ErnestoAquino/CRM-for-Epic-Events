@@ -200,42 +200,60 @@ class ServicesCRM:
                       email: str,
                       phone: str,
                       company_name: str,
-                      sales_contact: Collaborator):
+                      sales_contact: Collaborator) -> Client:
 
         # Check if email is already in use.
         if Client.objects.filter(email=email).exists():
             raise ValidationError(f"The {email} is already in use.")
 
-        # Create the new client
-        client = Client(
-            full_name=full_name,
-            email=email,
-            phone=phone,
-            company_name=company_name,
-            sales_contact=sales_contact
-        )
+        try:
+            # Create the new client
+            new_client = Client(
+                full_name = full_name,
+                email = email,
+                phone = phone,
+                company_name = company_name,
+                sales_contact = sales_contact
+            )
 
-        # Saves the new client to the database
-        client.save()
+            # Try to save the new client to the database
+            new_client.full_clean()
+            new_client.save()
 
-        return client
+            return new_client
+        except ValidationError as e:
+            capture_exception(e)
+            raise ValidationError(f"Validation error: {e}") from e
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            capture_exception(e)
+            raise Exception("Unexpected error creating client") from e
 
     def get_clients_for_collaborator(self, collaborator_id: int) -> QuerySet[Event]:
         """
-        Retrieves all clients attributed to a specific sales contact.
+        Retrieves clients associated with a specific collaborator from the database.
 
         Args:
-        sales_contact_id (int): The ID of the sales contact.
+            collaborator_id (int): The ID of the collaborator.
 
         Returns:
-        QuerySet[Client]: A queryset of clients attributed to the sales contact.
+            QuerySet[Client]: Queryset of clients associated with the collaborator.
+
+        Raises:
+            DatabaseError: If there is a problem with database access.
+            Exception: If an unexpected error occurs while retrieving clients.
         """
         try:
-            return Client.objects.filter(sales_contact_id=collaborator_id)
+            clients_of_collaborator = Client.objects.filter(sales_contact_id=collaborator_id)
+            return clients_of_collaborator
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with database access") from e
         except Exception as e:
             capture_exception(e)
-            print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
-            return Client.objects.none()
+            raise Exception("Unexpected error retrieving clients") from e
 
     def get_all_clients(self) -> QuerySet[Client]:
         """
@@ -255,6 +273,41 @@ class ServicesCRM:
             capture_exception(e)
             # Raise a generic exception if an unexpected error occurs
             raise Exception("Unexpected error retrieving clients.") from e
+
+    @staticmethod
+    def modify_client(client: Client, modifications: dict) -> Client:
+        """
+        Modifies an existing client with the provided data.
+
+        Args:
+            client (Client): Instance of the client to modify.
+            modifications (dict): Dictionary with the fields to modify and their new values.
+
+        Returns:
+            Client: The modified client.
+
+        Raises:
+            ValidationError: If there's a validation error with the provided data.
+            DatabaseError: If there's an issue accessing the database.
+        """
+        try:
+            # Update client attributes with provided modifications.
+            for key, value in modifications.items():
+                setattr(client, key, value)
+
+            client.full_clean()  # Perform full validation
+            client.save()  # Save the modified client
+            return client
+
+        except ValidationError as e:
+            capture_exception(e)
+            raise ValidationError(f"Validation error while modifying the client: {e}") from e
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            capture_exception(e)
+            raise Exception("Unexpected error modifying client.") from e
 
     # ===================================== CONTRACTS SECTION =====================================
     @staticmethod
