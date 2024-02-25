@@ -11,7 +11,7 @@ with open(secrets_file_path) as secret_file:
 sentry_dsn = secrets.get("SENTRY_DSN")
 
 sentry_sdk.init(
-    dsn = sentry_dsn,
+    dsn=sentry_dsn,
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
 )
