@@ -394,28 +394,57 @@ class ServicesCRM:
 
     def get_filtered_contracts_for_collaborator(self, collaborator_id: int,
                                                 filter_type: str = None) -> QuerySet[Contract]:
+        """
+        Retrieve filtered contracts associated with a specific collaborator.
+
+        Args:
+            collaborator_id (int): The ID of the collaborator whose contracts are to be retrieved.
+            filter_type (str, optional): The type of filter to be applied to the contracts.
+                Possible values are:
+                    - "signed": Filters contracts that are signed.
+                    - "not_signed": Filters contracts that are not signed.
+                    - "no_fully_paid": Filters contracts that are not fully paid yet.
+                    - None: No additional filtering.
+                Defaults to None.
+
+        Returns:
+            QuerySet[Contract]: A queryset containing the filtered contracts associated with the collaborator.
+
+        Raises:
+            DatabaseError: If there is a problem with database access.
+            ValueError: If the provided filter_type is unsupported.
+            Exception: For unexpected errors during the retrieval process.
+        """
         try:
-            # Create a new contract instance
+            # Retrieve clients associated with the collaborator
             clients = self.get_clients_for_collaborator(collaborator_id)
+
+            # Filter contracts based on clients.
             contracts = Contract.objects.filter(client__in=clients)
 
-            if filter_type == "signed":
-                contracts = contracts.filter(status="signed")
-
-            elif filter_type == "not_signed":
-                contracts = contracts.filter(status="not_signed")
-
-            # Filters contracts with amount_remaining greater than (__gt) 0, indicating they are not fully paid yet.
-            elif filter_type == "no_fully_paid":
-                contracts = contracts.filter(amount_remaining__gt=0)
+            # Apply additional filters based on filter_type
+            match filter_type:
+                case "signed":
+                    contracts = contracts.filter(status="signed")
+                case "not_signed":
+                    contracts = contracts.filter(status="not_signed")
+                case "no_fully_paid":
+                    contracts = contracts.filter(amount_remaining__gt=0)
+                case None:
+                    pass  # No additional filtering if filter_type is None
+                case _:
+                    raise ValueError(f"Unsupported filter type: {filter_type}")
 
             return contracts
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with database access") from e
         except Exception as e:
             capture_exception(e)
-            print(f"An unexpected error occurred while retrieving contracts for collaborator ID {collaborator_id}: {e}")
-            return Contract.objects.none()
+            raise Exception("Unexpected error retrieving contracts.") from e
 
-    def get_all_contracts(self) -> QuerySet[Contract]:
+    @staticmethod
+    def get_all_contracts() -> QuerySet[Contract]:
         """
         Retrieve all contracts from the database.
 
