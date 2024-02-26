@@ -374,31 +374,45 @@ class SalesRoleController:
         except Exception as e:
             self.view_cli.display_error_message(str(e))
 
-    # ================== 4 - Filter clients contracts.       ===============
+# ====================== 4 - Filter clients contracts.       ===========================================================
     def filter_contracts(self):
-        choice = self.view_cli.get_contract_filter_choices()
+        """
+        Filter and display contracts based on the collaborator's choice.
+
+        This method prompts the collaborator to select a filter option for contracts,
+        retrieves the filtered contracts based on the selected filter type,
+        and displays the list of filtered contracts.
+
+        Returns:
+            None
+        """
+
         filter_types = {
             1: None,  # No additional filter, get all contracts
             2: "no_fully_paid",
             3: "not_signed",
         }
+        # Prompt the collaborator to select a filter option.
+        choice = self.view_cli.get_contract_filter_choices()
 
         self.view_cli.clear_screen()
-        try:
-            if choice not in filter_types:
-                self.view_cli.display_error_message("Invalid choice.")
-                return
 
-            # Apply the appropriate filter based on the user's choice
-            filter_type = filter_types[choice]
-            contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id,
-                                                                                  filter_type=filter_type)
-            if not contracts:
-                self.view_cli.display_info_message("There are no contracts available.")
+        # Check if the choice is valid.
+        if choice not in filter_types:
+            self.view_cli.display_error_message("Invalid choice. Please try again.")
+            return
 
-            self.view_cli.display_list_of_contracts(contracts)
-        except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+        # Retrieve the filter type based on the collaborator's choice.
+        filter_type = filter_types[choice]
+
+        # Retrieve contracts assigned to the collaborator with the specified filter.
+        contracts_to_display = self.get_contracts_assigned_to(self.collaborator.id, filter_type)
+
+        if not contracts_to_display:
+            return
+
+        # Display the list of filtered contracts.
+        self.view_cli.display_list_of_contracts(contracts_to_display)
 
     # ================== 5 - Create an event for a client who has signed a contract   ===============
     def process_event_creation(self):
