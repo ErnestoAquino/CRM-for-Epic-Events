@@ -414,56 +414,99 @@ class SalesRoleController:
         # Display the list of filtered contracts.
         self.view_cli.display_list_of_contracts(contracts_to_display)
 
-    # ================== 5 - Create an event for a client who has signed a contract   ===============
-    def process_event_creation(self):
+# ====================== 5 - Create an event for a client who has signed a contract   ==================================
+    def process_event_creation(self) -> None:
+        """
+        Process the creation of an event associated with a signed contract.
+
+        This method clears the screen, retrieves signed contracts assigned to the
+        current collaborator, prompts the user to select a contract from the list,
+        and then initiates the event creation process for the selected contract.
+
+        Returns:
+            None
+        """
         self.view_cli.clear_screen()
-        try:
-            signed_contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id,
-                                                                                         filter_type="signed")
-        except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
+
+        # Retrieve signed contracts assigned to the current collaborator.
+        signed_contracts = self.get_contracts_assigned_to(self.collaborator.id, filter_type="signed")
+        if not signed_contracts:
             return
 
-        select_contract_to_add_event = self.select_contract_from_list(signed_contracts)
-
-        if not select_contract_to_add_event:
+        # Prompt the user to select a signed contract from the list.
+        selected_contract = self.select_contract_from_list(signed_contracts)
+        if not selected_contract:
             return
 
-        self.view_cli.display_contract_details(select_contract_to_add_event)
+        # Initiate the event creation for the selected contract.
+        self.create_event_for_signed_contract(selected_contract)
+
+    def create_event_for_signed_contract(self, signed_contract: Contract) -> None:
+        """
+        Create an event associated with a signed contract.
+
+        This method displays details of the signed contract,
+        prompts the user to provide information for the new event, and then creates
+        the event using the provided data.
+
+        Args:
+            signed_contract (Contract): The signed contract associated with the event.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Display details of the signed contract.
+        self.view_cli.display_contract_details(signed_contract)
         event_data = self.view_cli.get_data_for_add_new_event()
-        event_data["contract"] = select_contract_to_add_event
+
+        # Associate the signed contract with the event data.
+        event_data["contract"] = signed_contract
 
         try:
+            # Create the event using the provided data.
             new_event = self.services_crm.create_event(**event_data)
+            self.view_cli.display_event_details(new_event)
+            self.view_cli.display_info_message("Event created successfully.")
         except ValidationError as e:
-            self.view_cli.display_error_message(str(e))
-            return
-        except IntegrityError as e:
-            self.view_cli.display_error_message(f"An integrity error occurred while creating the event: {e}")
-            return
+            self.view_cli.display_error_message(f"Validation error: {e}")
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
         except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
-            return
-        self.view_cli.display_info_message(f"Event {new_event.name} created successfully.")
-        self.view_cli.display_event_details(new_event)
+            self.view_cli.display_error_message(str(e))
 
-    def select_contract_from_list(self, filtered_contracts: QuerySet[Contract]) -> Contract | None:
-        if not filtered_contracts:
-            self.view_cli.display_error_message("No contracts available.")
-            return None
+    def select_contract_from_list(self, filtered_contracts: List[Contract]) -> Optional[Contract]:
+        """
+        Prompt the user to select a contract from a list for further action.
 
+        This method clears the screen, displays a list of contracts for selection,
+        prompts the user to choose a contract by its ID, and returns the selected contract.
+
+        Args:
+            filtered_contracts (List[Contract]): The list of contracts to choose from.
+
+        Returns:
+            Optional[Contract]: The selected contract, or None if not found.
+        """
+        self.view_cli.clear_screen()
+
+        # Display list of contracts for user selection
         self.view_cli.display_contracts_for_selection(filtered_contracts)
+
+        # Create list of ids contracts
         contracts_ids = [contract.id for contract in filtered_contracts]
 
+        # Prompt the user to select a contract for add new event
         selected_contract_id = self.view_cli.prompt_for_selection_by_id(contracts_ids, "Contract")
 
-        # Find the selected event by the user in the retrieved event list.
+        # Find the selected contract from the list based on the ID selected
         selected_contract = next((contract for contract in filtered_contracts if contract.id == selected_contract_id),
                                  None)
 
         if not selected_contract:
-            self.view_cli.display_error_message("Selected contract not found.")
-            return None
+            # If the selected contract is not found
+            self.view_cli.display_error_message("We could not find the selected contract. Please try again.")
 
         return selected_contract
 
