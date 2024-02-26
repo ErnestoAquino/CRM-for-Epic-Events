@@ -65,7 +65,7 @@ class ServicesCRM:
         }
         group_name = role_to_group.get(role_name)
         if group_name:
-            group, group_created = Group.objects.get_or_create(name = group_name)
+            group, group_created = Group.objects.get_or_create(name=group_name)
             collaborator.save()
             collaborator.groups.add(group)
             collaborator.save()
@@ -74,17 +74,17 @@ class ServicesCRM:
 
     @staticmethod
     def modify_collaborator(collaborator: Collaborator, modifications: dict) -> Collaborator:
-        if 'username' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
-                username = modifications['username']).exists():
+        if 'username' in modifications and Collaborator.objects.exclude(id=collaborator.id).filter(
+                username=modifications['username']).exists():
             raise ValidationError(
                 f"The username: {modifications['username']} is already in use by another collaborator.")
 
-        if 'email' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
-                email = modifications['email']).exists():
+        if 'email' in modifications and Collaborator.objects.exclude(id=collaborator.id).filter(
+                email=modifications['email']).exists():
             raise ValidationError(f"The email: {modifications['email']} is already in use by another collaborator.")
 
-        if 'employee_number' in modifications and Collaborator.objects.exclude(id = collaborator.id).filter(
-                employee_number = modifications['employee_number']).exists():
+        if 'employee_number' in modifications and Collaborator.objects.exclude(id=collaborator.id).filter(
+                employee_number=modifications['employee_number']).exists():
             raise ValidationError(
                 f"The employee number: {modifications['employee_number']} is already in use by another collaborator.")
 
@@ -94,7 +94,7 @@ class ServicesCRM:
             new_role_name = modifications.pop('role_name')
             if collaborator.role.name != new_role_name:
                 role_modified = True
-                role, created = Role.objects.get_or_create(name = new_role_name)
+                role, created = Role.objects.get_or_create(name=new_role_name)
                 collaborator.role = role
 
         for field, value in modifications.items():
@@ -110,7 +110,7 @@ class ServicesCRM:
                 }
                 new_group_name = role_to_group.get(collaborator.role.name)
                 if new_group_name:
-                    new_group, _ = Group.objects.get_or_create(name = new_group_name)
+                    new_group, _ = Group.objects.get_or_create(name=new_group_name)
                     collaborator.groups.add(new_group)
 
             collaborator.save()
@@ -159,7 +159,7 @@ class ServicesCRM:
             Exception: If an unexpected error occurs.
         """
         try:
-            support_collaborators = Collaborator.objects .filter(role__name="support")
+            support_collaborators = Collaborator.objects.filter(role__name="support")
             return support_collaborators
         except DatabaseError as e:
             capture_exception(e)
@@ -209,11 +209,11 @@ class ServicesCRM:
         try:
             # Create the new client
             new_client = Client(
-                full_name = full_name,
-                email = email,
-                phone = phone,
-                company_name = company_name,
-                sales_contact = sales_contact
+                full_name=full_name,
+                email=email,
+                phone=phone,
+                company_name=company_name,
+                sales_contact=sales_contact
             )
 
             # Try to save the new client to the database
@@ -472,23 +472,55 @@ class ServicesCRM:
                      location: str,
                      attendees: int,
                      notes: str) -> Event:
+        """
+        Creates a new event and saves it to the database.
 
-        # Create the new event
-        event = Event(
-            contract = contract,
-            client_name = client_name,
-            name = name,
-            client_contact = client_contact,
-            start_date = start_date,
-            end_date = end_date,
-            location = location,
-            attendees = attendees,
-            notes = notes
-        )
-        # Saves the new event to the database
-        event.save()
+        This method creates a new event object with the provided parameters,
+        saves it to the database, and returns the created event instance.
 
-        return event
+        Args:
+            contract (Contract): The contract associated with the event.
+            client_name (str): The name of the client.
+            name (str): The name of the event.
+            client_contact (str): The contact information for the client.
+            start_date (datetime): The start date and time of the event.
+            end_date (datetime): The end date and time of the event.
+            location (str): The location of the event.
+            attendees (int): The number of attendees expected at the event.
+            notes (str): Any additional notes related to the event.
+
+        Returns:
+            Event: The newly created event object.
+
+        Raises:
+            ValidationError: If there's a validation error during saving.
+            DatabaseError: If there's a problem accessing the database.
+            Exception: If an unexpected error occurs during event creation.
+        """
+
+        try:
+            event = Event(
+                contract=contract,
+                client_name=client_name,
+                name=name,
+                client_contact=client_contact,
+                start_date=start_date,
+                end_date=end_date,
+                location=location,
+                attendees=attendees,
+                notes=notes
+            )
+            # Saves the new event to the database
+            event.save()
+            return event
+        except ValidationError as e:
+            raise ValidationError(f"ValidationError: {e}") from e
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with the database") from e
+        except Exception as e:
+            capture_exception(e)
+            raise Exception("An unexpected error occurred while creating the event") from e
 
     @staticmethod
     def get_all_events_with_optional_filter(support_contact_required: Optional[bool] = None) -> QuerySet[Event]:
