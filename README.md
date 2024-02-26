@@ -83,18 +83,26 @@ To enable **`your_user`** to execute Django migrations, they must have table cre
 \c your_db_name
 ```
 
+ Grant the privilege to connect to the database:
 ```sql
--- Grant the privilege to connect to the database
 GRANT CONNECT ON DATABASE your_db_name TO your_user;
+```
 
--- Grant usage of the default schema and basic table privileges
+Grant usage of the default schema and basic table privileges:
+```sql
 GRANT USAGE ON SCHEMA public TO your_user;
+```
+```sql
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO your_user;
+```
 
--- Permission to create tables, necessary for applying Django migrations
+Permission to create tables, necessary for applying Django migrations:
+```sql
 GRANT CREATE ON SCHEMA public TO your_user;
+```
 
--- Set default privileges for future tables created in the public schema
+Set default privileges for future tables created in the public schema
+```sql
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO your_user;
 ```
 
@@ -138,165 +146,34 @@ DATABASES = {
  python EpicCRM/manage.py migrate
 ```
 
-## **Configuration of Groups and Permissions**
+## Project Setup
 
-From the Django shell:
+
+### Initial Setup with Script
+
+To initialize the project with necessary groups, permissions, and a default management user, run the provided script using the following command:
 
 ```bash
-python EpicCRM/manage.py shell
+python EpicCRM/manage.py shell < EpicCRM/initialize_project.py
 ```
 
-### **Create Groups [management_team, sales_team, support_team]**
+This script automates the creation of essential groups (`management_team`, `sales_team`, `support_team`), assigns relevant permissions to each group, and creates a default user with management privileges.
 
-```python
-from django.contrib.auth.models import Group
+### Starting the Application
 
-# List of group names to be created
-group_names = ['management_team', 'sales_team', 'support_team']
-
-# Loop to create each group
-for group_name in group_names:
-    group, created = Group.objects.get_or_create(name=group_name)
-    if created:
-        print(f"Group '{group_name}' created successfully.")
-    else:
-        print(f"Group '{group_name}' already existed.")
-```
-
-### **Assign Permissions to the management_team Group**
-
-```python
-from django.contrib.auth.models import Group, Permission
-
-# Retrieve the group by its name
-management_team = Group.objects.get(name='management_team')
-
-# List of permission codenames to add to the group
-perm_codenames = [
-    'view_client',
-    'manage_collaborators',
-    'manage_contracts_creation_modification',
-    'view_contract',
-    'view_event',
-]
-
-# Retrieve permission objects based on codenames and add them to the group
-for codename in perm_codenames:
-    # Retrieve the permission by its codename
-    perm = Permission.objects.get(codename=codename)
-    # Add the permission to the group
-    management_team.permissions.add(perm)
-
-print("Permissions successfully added to the management_team group.")
-```
-
-### **Assign Permissions to the sales_team Group**
-
-```python
-from django.contrib.auth.models import Group, Permission
-
-# Retrieve the group by its name
-sales_team = Group.objects.get(name='sales_team')
-
-# List of permission codenames to add to the group
-perm_codenames = [
-    'add_client',
-    'view_client',
-    'view_contract',
-    'view_event',
-]
-
-# Retrieve permission objects based on codenames and add them to the group
-for codename in perm_codenames:
-    # Try to retrieve the permission by its codename
-    try:
-        perm = Permission.objects.get(codename=codename)
-        # Add the permission to the group
-        sales_team.permissions.add(perm)
-    except Permission.DoesNotExist:
-        print(f"The permission with codename '{codename}' does not exist.")
-
-print("Permissions successfully added to the sales_team group.")
-```
-
-### **Assign Permissions to the support_team Group**
-
- Permissions to the support_team Group**
-
-```python
-from django.contrib.auth.models import Group, Permission
-
-# Retrieve the group by its name
-support_team = Group.objects.get(name='support_team')
-
-# List of permission codenames to add to the group
-perm_codenames = [
-    'view_client',
-    'view_contract',
-    'view_event',
-]
-
-# Retrieve permission objects based on codenames and add them to the group
-for codename in perm_codenames:
-    # Try to retrieve the permission by its codename
-    try:
-        perm = Permission.objects.get(codename=codename)
-        # Add the permission to the group
-        support_team.permissions.add(perm)
-    except Permission.DoesNotExist:
-        print(f"The permission with codename '{codename}' does not exist.")
-
-print("Permissions successfully added to the support_team group.")
-```
-
-### **Create the First User**
-
-```python
-from django.contrib.auth.models import Group
-from django.contrib.auth.hashers import make_password
-from crm.models import Collaborator, Role  
-
-# Create the 'management' role
-role_name = "management"
-role, created = Role.objects.get_or_create(name=role_name)
-if created:
-    print(f"Role '{role_name}' created successfully.")
-else:
-    print(f"Role '{role_name}' already existed.")
-
-# Create the new collaborator with the assigned role
-collaborator = Collaborator(
-    first_name="Thomas",
-    last_name="Girard",
-    username="thomasg",
-    email="thomas.girard@example.net",
-    role=role,
-    employee_number="9473"
-)
-
-# Set the password
-collaborator.set_password("Manage123*")
-
-# Save the collaborator in the database
-collaborator.save()
-
-# Retrieve or create the 'management_team' group
-group, created = Group.objects.get_or_create(name='management_team')
-if created:
-    print("Group 'management_team' created successfully.")
-else:
-    print("Group 'management_team' already existed.")
-
-# Add the collaborator to the group
-group.user_set.add(collaborator)
-
-print("Collaborator successfully added to the 'management_team' group.")
-```
-
-Once your first collaborator is created, you can access the system using:
+After the initial setup, you can start the application by executing:
 
 ```bash
 python EpicCRM/main.py
 ```
 
-Connect using the collaborator's username and password you just created. Since the collaborator belongs to the management group, they can create other collaborators and assign roles. Create a collaborator with the sales role and another with the support role. The system checks the user's role to determine the main menu to be displayed. Sentry captures exceptions that may occur in the service layer, which communicates with the database. It also captures messages when a user tries to access a part of the system without the necessary permissions.
+This command launches the application's command-line interface, allowing you to interact with the CRM functionalities.
+
+### Logging In
+
+To log in to the system, use the following credentials created during the initialization process:
+
+- **Username:** `thomasg`
+- **Password:** `Manage123*`
+
+These credentials grant access to management functionalities, enabling full exploration and management of the CRM system.
