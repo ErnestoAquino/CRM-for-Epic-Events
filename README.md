@@ -135,7 +135,7 @@ DATABASES = {
 ## **Apply Migrations**
 
 ```bash
-python manage.py migrate
+ python EpicCRM/manage.py migrate
 ```
 
 ## **Configuration of Groups and Permissions**
@@ -143,7 +143,7 @@ python manage.py migrate
 From the Django shell:
 
 ```bash
-python manage.py shell
+python EpicCRM/manage.py shell
 ```
 
 ### **Create Groups [management_team, sales_team, support_team]**
