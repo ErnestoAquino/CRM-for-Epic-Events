@@ -73,7 +73,7 @@ class SalesRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. in start() - sales controller."
                     f"Expected options were between 1 and 9",
-                    level = 'error')
+                    level='error')
                 self.view_cli.display_error_message("Invalid option selected. Please try again.")
 
         # Asks the collaborator if they want to continue using the system.
@@ -131,7 +131,7 @@ class SalesRoleController:
         except Exception as e:
             self.view_cli.display_error_message(str(e))
 
-    # ================== 2 - Update client information.    =================
+# ======================= 2 - Update client information.    ============================================================
     def process_client_modification(self) -> None:
         """
         Process the modification of a client.
@@ -256,42 +256,90 @@ class SalesRoleController:
         except Exception as e:
             self.view_cli.display_error_message(str(e))
 
-    # ================== 3 - Modify/Update clients contracts.===============
+# ====================== 3 - Modify/Update clients contracts.   ========================================================
     def process_contract_modification(self) -> None:
-        selected_contract = self.get_contract_for_modification()
+        """
+        Process the modification of a contract by a collaborator.
 
+        This method retrieves contracts assigned to the current collaborator,
+        prompts the user to select a contract from the list, and then initiates
+        the modification process for the selected contract.
+
+        Returns:
+            None
+        """
+        contracts = self.get_contracts_assigned_to(self.collaborator.id)
+        if not contracts:
+            return
+
+        selected_contract = self.select_contract_form(contracts)
         if not selected_contract:
-            self.view_cli.display_error_message("Contract not found.")
             return
 
         self.modify_contract(selected_contract)
 
-    def get_contract_for_modification(self) -> Contract | None:
-        self.view_cli.clear_screen()
+    def get_contracts_assigned_to(self, collaborator_id: int, filter_type: str = None) -> List[Contract]:
+        """
+        Retrieve contracts assigned to a specific collaborator, optionally filtered by type.
 
+        Args:
+            collaborator_id (int): The ID of the collaborator whose contracts are to be retrieved.
+            filter_type (str, optional): The type of filter to be applied to the contracts.
+                Possible values are:
+                    - "signed": Filters contracts that are signed.
+                    - "not_signed": Filters contracts that are not signed.
+                    - "no_fully_paid": Filters contracts that are not fully paid yet.
+                    - None: No additional filtering.
+                Defaults to None.
+
+        Returns:
+            List[Contract]: A list of contracts assigned to the collaborator, optionally filtered.
+        """
         try:
-            # Try to retrieve the contracts of clients for the collaborator
-            contracts = self.services_crm.get_filtered_contracts_for_collaborator(self.collaborator.id)
-            self.view_cli.display_contracts_for_selection(contracts)
+            # Retrieve contracts assigned to the collaborator
+            contracts = self.services_crm.get_filtered_contracts_for_collaborator(collaborator_id, filter_type)
+        except ValueError as e:
+            self.view_cli.display_error_message(str(e))
+            return []
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+            return []
         except Exception as e:
-            self.view_cli.display_error_message(f"An unexpected error occurred: {e}")
-            return None
+            self.view_cli.display_error_message(str(e))
+            return []
 
-        # Check if there are contracts for the collaborator.
         if not contracts:
-            self.view_cli.display_info_message("There are no contracts available")
-            return None
+            # Display a message if there are no contracts available to display.
+            self.view_cli.display_info_message("There are no contracts to display")
 
-        # If there are contracts, proceed to display them and ask the user to choose one for modification.
-        contracts_ids = [contract.id for contract in contracts]
+        return contracts
+
+    def select_contract_form(self, list_of_contracts: List[Contract]) -> Optional[Contract]:
+        """
+        Prompt the user to select a contract from a list of contracts.
+
+        Args:
+            list_of_contracts (List[Contract]): A list of contracts to choose from.
+
+        Returns:
+            Optional[Contract]: The selected contract, or None if no contract is selected or found.
+        """
+        self.view_cli.clear_screen()
+        self.view_cli.display_contracts_for_selection(list_of_contracts)
+
+        # Create list with contract ids available
+        contracts_ids = [contract.id for contract in list_of_contracts]
+
+        # Prompt user to select a contract by ID
         selected_contract_id = self.view_cli.prompt_for_selection_by_id(contracts_ids, "Contract")
 
-        # Find the selected event by the user in the retrieved event list.
-        selected_contract = next((contract for contract in contracts if contract.id == selected_contract_id), None)
+        # Find the select contract by ID
+        selected_contract = next((contract for contract in list_of_contracts if contract.id == selected_contract_id),
+                                 None)
 
+        # If the contract is not found, display error message
         if not selected_contract:
-            self.view_cli.display_error_message("Selected event not found.")
-            return None
+            self.view_cli.display_error_message("We couldn't find the contract. Please try again later.")
 
         return selected_contract
 
@@ -309,17 +357,22 @@ class SalesRoleController:
             self.view_cli.display_info_message("No modifications were made.")
             return
 
-        # Applies the modifications to the event object.
-        for field, value in modifications.items():
-            setattr(contract, field, value)
+        try:
+            contract_modified = self.services_crm.modify_contract(contract, modifications)
+            self.view_cli.clear_screen()
 
-        # Saves the modified event.
-        contract.save()
+            # Display the details of the modified contract
+            self.view_cli.display_contract_details(contract_modified)
 
-        # Informs the user that the event was updated successfully.
-        self.view_cli.clear_screen()
-        self.view_cli.display_info_message("Contract updated successfully.")
-        self.view_cli.display_contract_details(contract)
+            # Inform the user tht the contract has been modifies successfully
+            self.view_cli.display_info_message("The contract has been modified successfully.")
+            return
+        except ValidationError as e:
+            self.view_cli.display_error_message(str(e))
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+        except Exception as e:
+            self.view_cli.display_error_message(str(e))
 
     # ================== 4 - Filter clients contracts.       ===============
     def filter_contracts(self):
