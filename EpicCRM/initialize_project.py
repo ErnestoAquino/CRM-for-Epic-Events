@@ -5,7 +5,7 @@ django.setup()
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth.hashers import make_password
-from crm.models import Collaborator, Role  # Assuming 'crm' is your app and 'Collaborator' and 'Role' are your models
+from crm.models import Collaborator, Role
 
 # Create groups
 group_names = ['management_team', 'sales_team', 'support_team']
@@ -48,7 +48,7 @@ collaborator = Collaborator(
     email="thomas.girard@example.net",
     role=role,
     employee_number="9473",
-    password=make_password("Manage123*")  # Use make_password to secure the password
+    password=make_password("Manage123*")
 )
 
 collaborator.save()
