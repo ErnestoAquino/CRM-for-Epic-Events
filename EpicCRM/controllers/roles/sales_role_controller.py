@@ -9,6 +9,7 @@ from typing import Optional
 from crm.models import Collaborator
 from crm.models import Client
 from crm.models import Contract
+from crm.models import Event
 from services.services_crm import ServicesCRM
 from views.roles.sales_role_view_cli import SalesRoleViewCli
 
@@ -55,16 +56,13 @@ class SalesRoleController:
                 self.process_event_creation()
             case 6:
                 # View the list of all clients.
-                self.view_cli.clear_screen()
-                self.present_list_all_clients()
+                self.show_all_clients()
             case 7:
                 # View the list of all contracts.
-                self.view_cli.clear_screen()
-                self.present_list_all_contracts()
+                self.show_all_contracts()
             case 8:
                 # View the list of all events.
-                self.view_cli.clear_screen()
-                self.present_list_all_events()
+                self.show_all_events()
             case 9:
                 # Exit the CRM system.
                 self.exit_of_crm_system()
@@ -510,59 +508,178 @@ class SalesRoleController:
 
         return selected_contract
 
-    # ================== 6 - View the list of all clients.   ===============
-    def present_list_all_clients(self):
+# ====================== 6 - View the list of all clients.   ===========================================================
+    def show_all_clients(self) -> None:
+        """
+        Displays the list of all clients.
+
+        This method first checks if the current collaborator has permission to view the client list.
+        If permission is granted, it retrieves the list of all clients and displays them.
+        If no clients are found or if the collaborator does not have permission, it returns.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view clients.
         if not self.collaborator.has_perm("crm.view_client"):
-            self.view_cli.display_error_message("You do not have permission to view the list of contracts.")
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of clients", level="info")
+            self.display_info_message("You do not have permission to view the list of clients.")
             return
 
-        # Retrieve all clients
-        clients = self.services_crm.get_all_clients()
+        # Retrieve the list of all clients.
+        clients = self.get_all_clients()
 
-        # Checks if there are no clients available.
+        # If no clients are found, return
         if not clients:
-            self.view_cli.display_info_message("No clients available.")
             return
 
-        # Displays the list of clients to the user.
+        # Display the list of clients.
         self.view_cli.display_list_of_clients(clients)
 
-    # ================== 7 - View the list of all contracts. ===============
-    def present_list_all_contracts(self):
+    def get_all_clients(self) -> List[Client]:
+        """
+        Retrieves all clients from the CRM service.
 
+        This method attempts to retrieve all clients from the CRM service.
+        It handles potential database errors and returns an empty list if no clients are found.
+
+        Returns:
+            List[Client]: A list of client objects retrieved from the CRM service.
+        """
+
+        try:
+            # Attempt to retrieve all clients
+            clients = self.services_crm.get_all_clients()
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered an error with the database. Please try again.")
+            return []
+        except Exception as e:
+            self.view_cli.display_error_message(f"{e}")
+            return []
+
+        # If no clients are retrieved, display message
+        if not clients:
+            self.view_cli.display_info_message("No customers currently available to display.")
+
+        return clients
+
+# ====================== 7 - View the list of all contracts. ===========================================================
+    def show_all_contracts(self) -> None:
+        """
+        Displays the list of all contracts.
+
+        This method checks if the current collaborator has permission to view the list of contracts.
+        If permission is granted, it retrieves the list of all contracts
+        and displays them. If no contracts are found or if the collaborator does not have permission,
+        it returns without displaying anything.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view contracts
         if not self.collaborator.has_perm("crm.view_contract"):
-            self.view_cli.display_error_message("You do not have permission to view the list of contracts.")
-            return
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of contract", level="info")
+            self.view_cli.display_info_message("You do not have permission to view the list of contracts.")
 
-        # Retrieve all contracts
-        contracts = self.services_crm.get_all_contracts()
+        # Retrieve the list of all contracts
+        contracts = self.get_all_contracts()
 
-        # Checks if there are no contracts available.
+        # If not contracts are found, return
         if not contracts:
-            self.view_cli.display_info_message("No contracts available.")
             return
 
-        # Displays the list of contracts to the user.
+        # Display the list of contracts
         self.view_cli.display_list_of_contracts(contracts)
 
-    # ================== 8 - View the list of all events. ==================
-    def present_list_all_events(self):
+    def get_all_contracts(self) -> List[Contract]:
+        """
+        Retrieves all contracts from the CRM service.
+
+        Returns:
+            List[Contract]: A list of contracts objects retrieved from the CRM service.
+        """
+
+        try:
+            # Attempt to retrieve all contracts
+            contracts = self.services_crm.get_all_contracts()
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered an error with the database. Please try again.")
+            return []
+        except Exception as e:
+            self.view_cli.display_error_message(f"{e}")
+            return []
+
+        # If no contracts are retrieved, display message
+        if not contracts:
+            self.view_cli.display_info_message("No customers currently available to display.")
+
+        return contracts
+
+# ======================= 8 - View the list of all events. =============================================================
+    def show_all_events(self) -> None:
+        """
+        Displays the list of all events.
+
+        This method first checks if the current collaborator has permission to view the list of events.
+        If permission is granted, it retrieves the list of all events and displays them.
+        If no events are found or if the collaborator does not have permission,
+        it returns without displaying anything.
+
+        Returns:
+            None
+        """
+        self.view_cli.clear_screen()
+
+        # Check if the collaborator has permission to view events
         if not self.collaborator.has_perm("crm.view_event"):
-            self.view_cli.display_error_message("You do not have permission to view the list of events.")
-            return
+            capture_message(f"Unauthorized access attempt by collaborator: {self.collaborator.username}"
+                            f" to the list of events", level="info")
+            self.view_cli.display_info_message("You do not have permission to view the list of events.")
 
-        #  Retrieve all events
-        events = self.services_crm.get_all_events()
+        # Retrieve the list of all events
+        events = self.get_events_with_optional_filter()
 
-        # Checks if there are no events available.
+        # If not events are found, return
         if not events:
-            self.view_cli.display_info_message("No events available.")
             return
 
-        # Displays the list of events to the user.
+        # Display the list of events
         self.view_cli.display_list_of_events(events)
 
-    # ================== 9 - Exit the CRM system.         ==================
+    def get_events_with_optional_filter(self, support_contact_required: Optional[bool] = None) -> List[Event]:
+        """
+        Retrieves events from the CRM service with an optional support contact filter.
+        Handles potential database errors and returns an empty list if no events are found.
+        Args:
+            support_contact_required (Optional[bool]): Flag indicating if events with support
+            contact requirement should be filtered. Defaults to None.
+        Returns:
+            List[Event]: A list of event objects retrieved from the CRM service.
+        """
+        try:
+            # Retrieve events from the CRM service with an optional support contact filter.
+            events = self.services_crm.get_all_events_with_optional_filter(support_contact_required)
+        except DatabaseError:
+            self.view_cli.display_error_message("I encountered a problem with the database. Please try again later.")
+            return []
+        except Exception as e:
+            self.view_cli.display_error_message(f"{e}")
+            return []
+
+        # Display a message if there are no events available.
+        if not events:
+            self.view_cli.display_info_message("There are no events available to display.")
+
+        # Return the list of events.
+        return events
+
+# ====================== 9 - Exit the CRM system.         ==============================================================
     def exit_of_crm_system(self):
         self.view_cli.clear_screen()
         self.view_cli.display_info_message("Thank you for using CRM Events, until next time!")
