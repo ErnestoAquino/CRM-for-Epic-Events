@@ -16,6 +16,16 @@ from crm.models import Event
 class BaseViewCli:
 
     def ask_user_if_continue(self) -> bool:
+        """
+        Ask the user if they want to continue performing another operation.
+
+        This method prompts the user with a question asking if they want to perform another operation.
+        It expects a yes/no response and continues to prompt until a valid response is entered.
+
+        Returns:
+            bool: True if the user wants to continue, False if they do not.
+
+        """
         while True:
             response = click.prompt("Do you want to perform another operation? (yes/no)", type=str).lower()
             if response == "yes":
@@ -26,6 +36,19 @@ class BaseViewCli:
                 self.display_error_message("Invalid response. Please enter 'yes' or 'no'.")
 
     def get_user_confirmation(self, question: str) -> bool:
+        """
+        Prompt the user for a yes/no confirmation.
+
+        This method prompts the user with a given question and expects a yes/no answer.
+        It continues to prompt until a valid response is entered.
+
+        Args:
+            question (str): The question to display to the user.
+
+        Returns:
+            bool: True if the user confirms with 'yes', False if the user responds with 'no'.
+
+        """
         while True:
             response = click.prompt(f"{question} (yes/no)", type=str).lower()
             if response == "yes":
@@ -36,6 +59,18 @@ class BaseViewCli:
                 self.display_error_message("Invalid response. Please enter 'yes' or 'no'.")
 
     def get_collaborator_choice(self, limit: int) -> int:
+        """
+        Prompt the user to choose an option within a specified limit.
+
+        This method prompts the user to choose an option within the specified limit.
+        It continues to prompt until a valid option is entered.
+
+        Args:
+            limit (int): The upper limit of the options available.
+
+        Returns:
+            int: The chosen option.
+        """
         while True:
             choice = click.prompt("Please choose an option", type=int)
             if 1 <= choice <= limit:
@@ -44,6 +79,19 @@ class BaseViewCli:
                 self.display_error_message("Invalid option. Please try again.")
 
     def prompt_for_selection_by_id(self, ids: [int], model_name: str) -> int:
+        """
+        Prompt the user to select an ID from a list.
+
+        This method prompts the user to enter the ID of the selected model from a list of IDs.
+        It continues to prompt until a valid ID is entered.
+
+        Args:
+            ids (List[int]): A list of integers representing the available IDs.
+            model_name (str): The name of the model for which the ID is being selected.
+
+        Returns:
+            int: The selected ID.
+        """
         # Ask the user to choose an ID
         while True:
             selected_id = click.prompt(f"Please enter the ID of the {model_name} you wish to select.", type=int)
@@ -54,34 +102,70 @@ class BaseViewCli:
 
     @staticmethod
     def clear_screen() -> None:
+        """
+        Clear the console screen using the `click.clear()` function.
+        """
         click.clear()
 
     @staticmethod
     def display_error_message(error_message: str) -> None:
+        """
+        Display an error message in the console with a bold red style.
+        Args:
+            error_message (str): The error message to be displayed.
+        """
+
         console = Console()
         error_text = Text(error_message, style="bold red")
         console.print(error_text)
 
     @staticmethod
     def display_info_message(info_message: str) -> None:
+        """
+        Display an information message in the console with a bold green style.
+        Args:
+            info_message (str): The information message to be displayed.
+        """
         console = Console()
         info_text = Text(info_message, style="bold green")
         console.print(info_text)
 
     @staticmethod
     def display_message(message: str) -> None:
+        """
+        Display a message in the console bold magenta style.
+        Args:
+            message (str): The message to be displayed.
+        """
         console = Console()
         message_text = Text(message, style="bold magenta")
         console.print(message_text)
 
     @staticmethod
     def display_warning_message(message: str) -> None:
+        """
+        Display a warning message in the console with a bold yellow style.
+        Args:
+            message (str): The warning message to be displayed.
+        """
         console = Console()
         message_text = Text(message, style="bold yellow")
         console.print(message_text)
 
     @staticmethod
-    def display_list_of_events(events_queryset: QuerySet) -> None:
+    def display_list_of_events(events: List[Event]) -> None:
+        """
+        Display a list of events in a table format.
+
+        This method takes a list of Event objects and displays them in a table format using the Rich library.
+
+        Args:
+            events (List[Event]): A list of Event objects to be displayed.
+
+        Returns:
+            None
+        """
+
         # Create console instance.
         console = Console()
 
@@ -104,7 +188,7 @@ class BaseViewCli:
         table.add_column("Notes", style="dim", width=30)
 
         # Fill the table with events' data
-        for event in events_queryset:
+        for event in events:
             event_name = event.name if event.name else "No Named"
             contract_id = str(event.contract.id) if event.contract else "No Contract"
             client_name = event.client_name
@@ -133,7 +217,18 @@ class BaseViewCli:
         console.print(table)
 
     @staticmethod
-    def display_list_of_clients(clients_queryset: QuerySet) -> None:
+    def display_list_of_clients(clients: List[Client]) -> None:
+        """
+        Display a list of clients in a table format.
+        This method takes a list of clients and displays them in a table format using the Rich library.
+
+        Args:
+            clients (List[Client]): A list of clients to be displayed.
+
+        Returns:
+            None
+        """
+
         # Create console instance.
         console = Console()
 
@@ -151,7 +246,7 @@ class BaseViewCli:
         table.add_column("Creation Date", style="dim", width=20)
 
         # Fill the table with clients' data
-        for client in clients_queryset:
+        for client in clients:
             table.add_row(
                 client.full_name,
                 client.email,
@@ -164,7 +259,21 @@ class BaseViewCli:
         console.print(table)
 
     @staticmethod
-    def display_list_of_contracts(contracts_queryset: QuerySet) -> None:
+    def display_list_of_contracts(contracts: List[Contract]) -> None:
+        """
+        Display a list of contracts in a table format.
+
+        This method takes a list of contracts and displays them in a tabular format,
+        including details such as contract ID, client name, sales contact, total amount,
+        amount remaining, creation date, and status.
+
+        Args:
+            contracts (List[Contract]): A list of contracts to be displayed.
+
+        Returns:
+            None
+        """
+
         # Create console instance.
         console = Console()
 
@@ -179,7 +288,7 @@ class BaseViewCli:
         table.add_column("Status", style="dim", width=15)
 
         # Fill the table with contracts' data
-        for contract in contracts_queryset:
+        for contract in contracts:
             client_name = contract.client.full_name if contract.client else "No Client Assigned"
             sales_contact_name = contract.sales_contact.get_full_name() if contract.sales_contact else ("No Contact "
                                                                                                         "Assigned")
@@ -206,12 +315,26 @@ class BaseViewCli:
     # ==========================  Management Controller    ===============================
 
     def show_menu(self, collaborator_name: str, menu_options: List[str]) -> None:
+        """
+        Display a menu with options for the user.
+
+        This method displays a menu of options for the user to choose from.
+        It includes a greeting message with the collaborator's name and prompts the user to select
+        an operation from the provided list of menu options.
+
+        Args:
+            collaborator_name (str): The name of the collaborator.
+            menu_options (List[str]): A list of menu options to be displayed.
+
+        Returns:
+            None
+        """
         self.clear_screen()
         console = Console()
 
         # Create a table for the menu options.
-        table = Table(show_header = True, header_style = "bold magenta")
-        table.add_column("Menu Options", justify = "left", style = "dim")
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Menu Options", justify="left", style="dim")
 
         # Add menu options to the table
         for option in menu_options:
@@ -224,6 +347,22 @@ class BaseViewCli:
         console.print(table)
 
     def get_valid_input_with_limit(self, prompt_text: str, max_length: int, allow_blank: bool = False) -> str:
+        """
+        Prompt the user for input within a specified limit.
+
+        This method prompts the user for input using Click library. It ensures that the input
+        is not empty and does not exceed the specified maximum length. If allow_blank is True,
+        it allows blank input. Otherwise, it displays a warning message for empty input.
+
+        Args:
+            prompt_text (str): The text to prompt the user for input.
+            max_length (int): The maximum length allowed for the input.
+            allow_blank (bool, optional): Whether blank input is allowed. Defaults to False.
+
+        Returns:
+            str: The valid input from the user.
+        """
+
         # Loop to ensure valid input within the specified limit or allow blank input.
         while True:
             # Prompts the user for input.
@@ -356,9 +495,21 @@ class BaseViewCli:
                 continue
 
             return choice
+
     # ==========================  Sales Controller    ===============================
 
     def display_contract_details(self, contract: Contract) -> None:
+        """
+        Display details of a contract.
+
+        This method create a table to display detailed information about a contract.
+        It includes contract ID, client information, sales contact, total amount, amount remaining, creation date,
+        and status. The table is then printed using the Rich library for terminal output.
+
+        Args:
+            contract (Contract): The Contract object whose details are to be displayed.
+        """
+
         console = Console()
         self.clear_screen()
 
@@ -382,7 +533,18 @@ class BaseViewCli:
 
         console.print(table, justify="center")
 
-    def display_clients_for_selection(self, clients_queryset: QuerySet) -> None:
+    def display_clients_for_selection(self, clients: List[Client]) -> None:
+        """
+        Display a list of clients for selection.
+
+        This method creates a table to display a list of available clients
+        for selection. It includes client ID and full name in the table. The table is then printed
+        using the Rich library for terminal output.
+
+        Args:
+            clients (List[Client]): A list of Client objects to display for selection.
+        """
+
         self.clear_screen()
         # Create console instance
         console = Console()
@@ -393,7 +555,7 @@ class BaseViewCli:
         table.add_column("Full Name", style="dim", width=20)
 
         # Fill the table with clients data
-        for client in clients_queryset:
+        for client in clients:
             client_name = client.full_name if client.full_name else "No Name"
 
             table.add_row(
@@ -405,13 +567,23 @@ class BaseViewCli:
         console.print(table)
 
     def display_client_details(self, client: Client) -> None:
+        """
+        Display details of a client.
+
+        This method clears the screen and creates a table to display the details of the given client,
+        including client ID, full name, email, phone number, company name, and sales contact. The table
+        is then printed using the Rich library for terminal output.
+
+        Args:
+            client (Client): The client object whose details are to be displayed.
+        """
         self.clear_screen()
         console = Console()
 
         # Create a table to display client details
         table = Table(title="Client Detail", show_header=True, header_style="bold blue", show_lines=True)
         table.add_column("Field", style="dim", width=20)
-        table.add_column("Value", width = 40)
+        table.add_column("Value", width=40)
 
         # Add rows to the table with client details
         table.add_row("Client ID", str(client.id))
@@ -424,7 +596,17 @@ class BaseViewCli:
         # Print the table
         console.print(table, justify="center")
 
-    def display_contracts_for_selection(self, contracts_queryset: QuerySet) -> None:
+    def display_contracts_for_selection(self, contracts: List[Contract]) -> None:
+        """
+        Display a list of available contracts for selection.
+
+        This method clears the screen, creates a table to display the available contracts along with
+        their ID, client name, and status. The table is printed using the Rich library for terminal
+        output.
+
+        Args:
+            contracts (List[Contract]): A list of contracts to display.
+        """
         self.clear_screen()
         # Create console instance
         console = Console()
@@ -437,7 +619,7 @@ class BaseViewCli:
         table.add_column("Status", width=12)
 
         # Fill the table with contracts data
-        for contract in contracts_queryset:
+        for contract in contracts:
             client_name = contract.client.full_name if contract.client.full_name else "No Name"
             status = contract.get_status_display()
 
@@ -452,7 +634,19 @@ class BaseViewCli:
 
     # ==========================  Support Controller    ===============================
 
-    def display_events_for_selection(self, events_queryset: QuerySet) -> None:
+    @staticmethod
+    def display_events_for_selection(events: List[Event]) -> None:
+        """
+        Display a list of available events for selection.
+
+        This static method creates a table to display the available events along with their ID, name,
+        client name, and support contact. The table is printed using Rich library for terminal
+        output.
+
+        Args:
+            events (List[Event]): A list of events to display.
+        """
+
         # Create console instance
         console = Console()
 
@@ -461,10 +655,10 @@ class BaseViewCli:
         table.add_column("ID", style="dim", width=10)
         table.add_column("Name", style="dim", width=20)
         table.add_column("Client Name", style="dim", width=20)
-        table.add_column("Support Contact", style = "dim", width = 20)
+        table.add_column("Support Contact", style="dim", width=20)
 
         # Fill the table with events data
-        for event in events_queryset:
+        for event in events:
             event_name = event.name if event.name else "No Name"
             client_name = event.client_name
             support_contact = event.support_contact.get_full_name() if event.support_contact else "N/A"
@@ -479,7 +673,18 @@ class BaseViewCli:
         # Print the table using Rich
         console.print(table)
 
-    def display_event_details(self, event: Event) -> None:
+    @staticmethod
+    def display_event_details(event: Event) -> None:
+        """
+        Display the details of an event in a formatted table.
+
+        This method creates a table to display various details of the provided event,
+        including its ID, name, client details, start and end dates, location, attendees,
+        support contact, and any additional notes.
+
+        Args:
+            event (Event): The event object containing details to display.
+        """
         console = Console()
 
         # Create a table to display event details
