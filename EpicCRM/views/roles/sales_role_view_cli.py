@@ -56,6 +56,15 @@ class SalesRoleViewCli(BaseViewCli):
     EMAIL_REGEX = r'\b[A-Z|a-z|0-9|._%+-]+@[A-Z|a-z|0-9|.-]+\.[A-Z|a-z|0-9]{2,10}\b'
 
     def show_main_menu(self, collaborator_name: str):
+        """
+        Display the main menu to the user.
+
+        This method prints the main menu options in a table format,
+        along with a welcome message addressed to the collaborator.
+
+        Args:
+            collaborator_name (str): The name of the collaborator to whom the welcome message is addressed.
+        """
         self.clear_screen()
         console = Console()
 
@@ -84,53 +93,23 @@ class SalesRoleViewCli(BaseViewCli):
         return choice
 
     def get_data_for_add_new_client(self) -> dict:
+        """
+        Prompt the user to provide information for creating a new client.
+
+        This method displays a series of prompts to collect information required to create a new client.
+        It ensures that the input provided by the user is valid and within specified limits.
+
+        Returns:
+            dict: A dictionary containing the collected client data.
+        """
+
         # Displays a message requesting information for the new client.
         self.display_info_message("Please provide the following information for the new client")
 
-        # Loop to ensure valid input for the full name.
-        while True:
-            full_name = click.prompt("Full Name (max 100 characters)", type=str).strip()
-            if not full_name:
-                self.display_warning_message("Name cannot be empty.")
-                continue
-            if len(full_name) > 100:
-                self.display_warning_message("Full Name must not exceed 100 characters.")
-                continue
-            break
-
-        # Loop to ensure valid input for the email.
-        while True:
-            email = click.prompt("Email", type=str).strip()
-            if not email:
-                self.display_warning_message("Email cannot be empty.")
-                continue
-            if not re.fullmatch(self.EMAIL_REGEX, email):
-                self.display_error_message("Invalid email format. Please enter a valid email address,"
-                                           " such as example@domain.com.")
-                continue
-            break
-
-        # Loop to ensure valid input for the phone number.
-        while True:
-            phone = click.prompt("Phone number (max 20 characters)", type=str).strip()
-            if not phone:
-                self.display_warning_message("Phone number cannot be empty.")
-                continue
-            if len(phone) > 20:
-                self.display_warning_message("Phone number must not exceed 20 characters.")
-                continue
-            break
-
-        # Loop to ensure valid input for the company name.
-        while True:
-            company_name = click.prompt("Company name (max 100 characters)", type=str).strip()
-            if not company_name:
-                self.display_warning_message("Company name cannot be empty.")
-                continue
-            if len(company_name) > 100:
-                self.display_warning_message("Company name must not exceed 100 characters.")
-                continue
-            break
+        full_name = self.get_valid_input_with_limit("Full Name (max 100 characters)", 100)
+        email = self.get_valid_email()
+        phone = self.get_valid_input_with_limit("Phone number (max 20 characters)", 20)
+        company_name = self.get_valid_input_with_limit("Company name (max 100 characters)", 100)
 
         # Constructs a dictionary containing the collected client data.
         client_data = {
@@ -142,111 +121,71 @@ class SalesRoleViewCli(BaseViewCli):
 
         return client_data
 
-    def prompt_for_client_modification(self) -> dict:
-        modifications = {}
-        self.display_info_message("Leave blank any field you do not wish to modify.")
+    def get_data_for_client_modification(self) -> dict:
+        """
+        Prompt the user to provide information for modifying a client's details.
 
-        # Full Name Modification
-        while True:
-            new_full_name = click.prompt("New Full Name (max 100 characters)",
-                                         default = "",
-                                         show_default = False).strip()
-            if not new_full_name:
-                break
-            if len(new_full_name) > 100:
-                self.display_error_message("Full Name must not exceed 100 characters. Please try again.")
-                continue
-            modifications["full_name"] = new_full_name
-            break
+        This method displays a series of prompts to collect information required to modify a client's details.
+        It allows the user to leave fields blank if they do not wish to modify them.
+        It ensures that the input provided by the user is valid and within specified limits.
 
-        # Email Modification
-        while True:
-            new_email = click.prompt("New Email", default = "", show_default = False).strip()
-            if not new_email:
-                break
-            if not re.fullmatch(self.EMAIL_REGEX, new_email):
-                self.display_error_message(
-                    "Invalid email format. Please enter a valid email address, such as example@domain.com.")
-                continue
-            modifications["email"] = new_email
-            break
+        Returns:
+            dict: A dictionary containing the modification data for the client.
+        """
+        modification_data = {}
+        self.display_info_message("Leave blank any field you do not wish to modify")
 
-        # Phone Number Modification
-        while True:
-            new_phone = click.prompt("New Phone number (max 20 characters)", default = "", show_default = False).strip()
-            if not new_phone:
-                break
-            if len(new_phone) > 20:
-                self.display_error_message("Phone number must not exceed 20 characters. Please try again.")
-                continue
-            modifications["phone"] = new_phone
-            break
+        new_full_name = self.get_valid_input_with_limit("New full name (max 100 characters) or leave blank",
+                                                        100, allow_blank=True)
+        if new_full_name:
+            modification_data["full_name"] = new_full_name
 
-        # Company Name Modification
-        while True:
-            new_company_name = click.prompt("New Company name (max 100 characters)", default = "",
-                                            show_default = False).strip()
-            if not new_company_name:
-                break
-            if len(new_company_name) > 100:
-                self.display_error_message("Company name must not exceed 100 characters. Please try again.")
-                continue
-            modifications["company_name"] = new_company_name
-            break
+        new_email = self.get_valid_email(allow_blank=True)
+        if new_email:
+            modification_data["email"] = new_email
 
-        return modifications
+        new_phone = self.get_valid_input_with_limit("New phone number (max 20 characters) or leave blank",
+                                                    20, allow_blank=True)
+        if new_phone:
+            modification_data["phone"] = new_phone
 
-    def prompt_for_contract_modification(self) -> dict:
-        modifications = {}
-        self.display_info_message("Leave blank any field you do not wish to modify.")
+        new_company_name = self.get_valid_input_with_limit("New company name (max 100 characters) or leave blank",
+                                                           100, allow_blank=True)
+        if new_company_name:
+            modification_data["company_name"] = new_company_name
 
-        # Total amount modification
-        while True:
-            new_total_amount_str = click.prompt("New Total Amount (e.g., 9999.99)", default = "",
-                                                show_default = False).strip()
-            if not new_total_amount_str:
-                break
-            try:
-                new_total_amount = float(new_total_amount_str)
-                if new_total_amount <= 0:
-                    self.display_error_message("Invalid total amount. Please enter a positive number.")
-                    continue
-                modifications["total_amount"] = "{:.2f}".format(new_total_amount)
-                break
-            except ValueError:
-                self.display_error_message("Please enter a valid number.")
-                continue
+        return modification_data
 
-        # Amount Remaining Modification
-        while True:
-            new_amount_remaining_str = click.prompt("New Amount Remaining (e.g., 9999.99)", default = "",
-                                                    show_default = False).strip()
-            if not new_amount_remaining_str:
-                break
-            try:
-                new_amount_remaining = float(new_amount_remaining_str)
-                if new_amount_remaining < 0:
-                    self.display_error_message("Invalid amount remaining. Please enter a non-negative number.")
-                    continue
-                modifications["amount_remaining"] = "{:.2f}".format(new_amount_remaining)
-                break
-            except ValueError:
-                self.display_error_message("Please enter a valid number.")
-                continue
+    def get_data_for_contract_modification(self) -> dict:
+        """
+        Prompt the user to provide information for modifying a contract.
 
-        # Status Modification
-        while True:
-            new_status = click.prompt("New Status (Options: signed, not_signed)", default="",
-                                      show_default=False).strip().lower()
-            if not new_status:
-                break
-            if new_status not in self.VALID_STATUS_CHOICES:
-                self.display_error_message("Invalid status. Please choose a valid status: signed or not_signed.")
-                continue
-            modifications["status"] = new_status
-            break
+        This method displays prompts to collect information required to modify a contract.
+        It allows the user to leave fields blank if they do not wish to modify them.
+        It ensures that the input provided by the user is valid.
 
-        return modifications
+        Returns:
+            dict: A dictionary containing the modification data for the contract.
+        """
+        modification_data = {}
+        self.display_info_message("Modifying contract..."
+                                  "Please leave blank any field you do not wish to modify")
+
+        new_total_amount = self.get_valid_decimal_input("Total Amount (e.g. 9999.99)", allow_blank=True)
+        if new_total_amount:
+            modification_data["total_amount"] = "{:.2f}".format(new_total_amount)
+
+        new_amount_remaining = self.get_valid_decimal_input("Amount remaining (e.g. 9999.99)", allow_blank=True)
+        if new_amount_remaining:
+            modification_data["amount_remaining"] = "{:.2f}".format(new_amount_remaining)
+
+        new_status = self.get_valid_choice("New status (Options: signed, not_signed)",
+                                           choices=["signed", "not_signed"],
+                                           allow_blank=True)
+        if new_status:
+            modification_data["status"] = new_status
+
+        return modification_data
 
     def get_contract_filter_choices(self) -> int:
         """
@@ -333,7 +272,7 @@ class SalesRoleViewCli(BaseViewCli):
             int: The valid positive integer input.
         """
         while True:
-            user_input_str = click.prompt(prompt_text, default = "", show_default = False)
+            user_input_str = click.prompt(prompt_text, default="", show_default=False)
             try:
                 # Attempts to convert the input to an integer.
                 user_input_int = int(user_input_str)
@@ -344,7 +283,6 @@ class SalesRoleViewCli(BaseViewCli):
 
             # Checks if the input is a positive integer.
             if user_input_int <= 0:
-
                 # If the input is not positive, display an error message.
                 self.display_error_message("The number must be greater than zero. Please try again.")
                 continue
@@ -366,7 +304,7 @@ class SalesRoleViewCli(BaseViewCli):
 
         # Loop to ensure valid input for the start date.
         while True:
-            start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
+            start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default="", show_default=False)
             try:
 
                 # Attempts to parse the input string into a datetime object.
@@ -402,7 +340,7 @@ class SalesRoleViewCli(BaseViewCli):
 
         # Loop to ensure valid input for the end date.
         while True:
-            end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default = "", show_default = False)
+            end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default="", show_default=False)
             try:
 
                 # Attempts to parse the input string into a datetime object.
@@ -415,7 +353,6 @@ class SalesRoleViewCli(BaseViewCli):
                 continue
                 # Checks if the end date is before or equal to the start date.
             if aware_end_date <= start_date:
-
                 # If the end date is not after the start date, display an error message.
                 self.display_error_message("End date must be after start date. Please try again.")
                 continue
@@ -432,14 +369,14 @@ class SalesRoleViewCli(BaseViewCli):
         self.clear_screen()
 
         # Create a table to display event details.
-        table = Table(title = "Event Detail",
-                      show_header = True,
-                      header_style = "bold blue",
-                      show_lines = True)
+        table = Table(title="Event Detail",
+                      show_header=True,
+                      header_style="bold blue",
+                      show_lines=True)
 
         # Add columns to the table.
-        table.add_column("Field", style = "dim", width = 20)
-        table.add_column("Value", width = 40)
+        table.add_column("Field", style="dim", width=20)
+        table.add_column("Value", width=40)
 
         # Add rows to the table with event details.
         table.add_row("Event ID", str(event.id))
@@ -458,4 +395,4 @@ class SalesRoleViewCli(BaseViewCli):
         table.add_row("Notes", event.notes or "N/A")
 
         # Print the table to the console, justifying the content to the center.
-        console.print(table, justify = "center")
+        console.print(table, justify="center")
