@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+from typing import List
 from django.db.models.query import QuerySet
 from django.utils.timezone import make_aware
 from django.utils.timezone import get_default_timezone
@@ -31,6 +33,15 @@ class SupportRoleViewCli(BaseViewCli):
     MENU_LIMIT = len(MENU_OPTIONS)
 
     def show_main_menu(self, collaborator: Collaborator) -> None:
+        """
+        Display the main menu of the CRM system.
+
+        This method displays the main menu options to the user.
+        It formats the menu options in a table and prints them to the console.
+
+        Args:
+            collaborator (Collaborator): The logged-in collaborator for whom the menu is being displayed.
+        """
         self.clear_screen()
         console = Console()
 
@@ -56,6 +67,12 @@ class SupportRoleViewCli(BaseViewCli):
         console.print(table)
 
     def get_user_menu_choice(self) -> int:
+        """
+        Prompt the user to choose an option from the main menu.
+        Returns:
+            int: The user's menu choice.
+        """
+
         # Capture user choice
         choice = self.get_collaborator_choice(limit=self.MENU_LIMIT)
 
@@ -108,80 +125,170 @@ class SupportRoleViewCli(BaseViewCli):
         # Print the table using Rich
         console.print(table)
 
-    def prompt_for_event_modification(self) -> dict:
-        modifications = {}
+    def get_data_for_event_modification(self) -> dict:
+        """
+        Collect data from the user for modifying an event.
+
+        This method prompts the user to enter new data for modifying different fields of an event.
+        The user can leave a field blank if they do not wish to modify it.
+        The method collects data such as the new name, client name, client contact, location, notes, attendees,
+        start date, and end date. It validates the input for each field.
+
+        Returns:
+            dict: A dictionary containing the modified data for the event.
+        """
+        modification_data = {}
+
         self.display_info_message("Leave blank any field you do not wish to modify.")
 
-        new_name = click.prompt("New name for event", default="", show_default=False)
+        new_name = self.get_valid_input_with_limit("New Name (or leave blank)", 100, allow_blank=True)
         if new_name:
-            modifications["name"] = new_name
+            modification_data["name"] = new_name
 
-        new_client_name = click.prompt("New client name", default="", show_default=False)
+        new_client_name = self.get_valid_input_with_limit("New Client Name (or leave blank)", 100, allow_blank=True)
         if new_client_name:
-            modifications["client_name"] = new_client_name
+            modification_data["client_name"] = new_client_name
 
-        new_client_contact = click.prompt("New client contact", default="", show_default=False)
+        new_client_contact = self.get_valid_input_with_limit("New contact information (or leave blank)", 250,
+                                                             allow_blank=True)
         if new_client_contact:
-            modifications["client_contact"] = new_client_contact
+            modification_data["client_contact"] = new_client_contact
 
-        new_location = click.prompt("New location", default="", show_default=False)
+        new_location = self.get_valid_input_with_limit("New Location (or leave blank)", 250, allow_blank=True)
         if new_location:
-            modifications["location"] = new_location
+            modification_data["location"] = new_location
 
-        new_notes = click.prompt("New notes", default="", show_default=False)
+        new_notes = self.get_valid_input_with_limit("New Notes (or leave blank)", 500, allow_blank=True)
         if new_notes:
-            modifications["notes"] = new_notes
+            modification_data["notes"] = new_notes
 
-        # Request new attendees
-        while True:
-            new_attendees_str = click.prompt("New number of attendees", default="", show_default=False)
-            if not new_attendees_str:
-                break  # Exit the loop if the user leaves the field blank
-            try:
-                new_attendees = int(new_attendees_str)
-                if new_attendees <= 0:
-                    self.display_error_message("Number of attendees cannot be negative or zero. Please try again.")
-                    continue
-                modifications["attendees"] = new_attendees
-                break  # End the loop after processing a valid number of attendees
-            except ValueError:
-                self.display_error_message("Please enter a valid integer for the number of attendees.")
+        new_attendees = self.get_valid_integer_input("New Attendees (or leave blank)", allow_blank=True)
+        if new_attendees:
+            modification_data["attendees"] = new_attendees
 
-        # Request new start date
+        new_start_date = self.get_valid_start_date(allow_blank=True)
+        if new_start_date:
+            modification_data["start_date"] = new_start_date
+            new_end_date = self.get_valid_end_date(new_start_date, allow_blank=True)
+            if new_end_date:
+                modification_data["end_date"] = new_end_date
+
+        return modification_data
+
+    def get_valid_integer_input(self, prompt_text: str, allow_blank: bool = False) -> Optional[int]:
+        """
+        Prompts the user for a valid integer input.
+
+        This method prompts the user with a specified prompt text to enter an integer number.
+        It validates the input and returns the integer value entered by the user.
+        If 'allow_blank' is set to True, it allows the input to be empty (None).
+
+        Args:
+            prompt_text (str): The prompt text to display to the user.
+            allow_blank (bool, optional): Whether to allow blank input (default is False).
+
+        Returns:
+            Optional[int]: The validated integer value entered by the user, or None if input is blank.
+        """
         while True:
-            new_start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default="", show_default=False)
-            if not new_start_date_str:
-                break  # Exit the loop if the user leaves the field blank
+            user_input = click.prompt(prompt_text, default="", show_default=False).strip()
+
+            # Check if input is blank and allow_blank is True
+            if allow_blank and user_input == "":
+                return None
+
+            # Check if input is empty and allow_blank is False
+            if not user_input and not allow_blank:
+                self.display_error_message("This field cannot be empty.")
+                continue
+
             try:
-                naive_start_date = parse(new_start_date_str)
-                if naive_start_date < datetime.now():
-                    self.display_error_message("Start date must be in the future. Please try again.")
-                    continue
-                # Making date/time "aware" to comply with Django and avoid timezone warnings, ensuring correct
-                # timezone handling.
-                aware_start_date = make_aware(naive_start_date, get_default_timezone())
-                modifications["start_date"] = aware_start_date
-                break  # End the loop after processing a valid start date
+                # Convert input to int and check if it's an integer
+                value = int(user_input)
+                return value
             except ValueError:
+                # Handle non-numeric input
+                self.display_error_message("Please enter a valid integer number (e.g. 12345)")
+                continue
+
+    def get_valid_start_date(self, allow_blank: bool = False) -> Optional[datetime]:
+        """
+        Prompts the user for a valid start date, ensuring it's in the future or optionally allows blank input.
+
+        This method continuously prompts the user for a start date until a valid one is provided or
+        allows for a blank input if allow_blank is True.
+        It checks if the input can be parsed into a datetime object and if it's in the future.
+        Displays error messages for invalid input or start dates in the past.
+
+        Args:
+            allow_blank (bool): If True, allows the method to return None for blank inputs.
+
+        Returns:
+            datetime or None: The valid start date, or None if blank input is allowed and chosen.
+        """
+
+        while True:
+            start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default="", show_default=False)
+
+            # Allows blank input if allow_blank is True and the input is blank.
+            if allow_blank and start_date_str.strip() == "":
+                return None
+
+            try:
+                # Attempts to parse the input string into a datetime object.
+                naive_start_date = parse(start_date_str)
+            except ValueError:
+                # If the input cannot be parsed, display an error message.
                 self.display_error_message("Invalid date format. Please use YYYY-MM-DD HH:MM.")
+                continue
 
-        # Request a new end date
+            # Checks if the start date is in the future.
+            if naive_start_date < datetime.now():
+                self.display_error_message("Start date must be in the future. Please try again.")
+                continue
+
+            # Converts the naive start date to an aware datetime object and returns it.
+            return make_aware(naive_start_date, get_default_timezone())
+
+    def get_valid_end_date(self, start_date: datetime, allow_blank: bool = False) -> Optional[datetime]:
+        """
+        Prompts the user for a valid end date,
+        ensuring it's after the provided start date or optionally allows blank input.
+
+        This method continuously prompts the user for an end date until a valid one is provided or
+        allows for a blank input if allow_blank is True.
+        It checks if the input can be parsed into a datetime object and if it's after the start date.
+        Displays error messages for invalid input or end dates before or equal to the start date.
+
+        Args:
+            start_date (datetime): The start date to compare the end date against.
+            allow_blank (bool): If True, allows the method to return None for blank inputs.
+
+        Returns:
+            datetime or None: The valid end date, or None if blank input is allowed and chosen.
+        """
+
         while True:
-            new_end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default="", show_default=False)
-            if not new_end_date_str:
-                break  # Exit the loop if the user leaves the field blank
-            try:
-                naive_end_date = parse(new_end_date_str)
-                # Ensure that the new end date is after the new start date (if modified)
-                if "start_date" in modifications:
-                    # Making date/time "aware" to comply with Django and avoid timezone warnings.
-                    aware_end_date = make_aware(naive_end_date, get_default_timezone())
-                    if aware_end_date <= modifications["start_date"]:
-                        self.display_error_message("End date must be after start date. Please try again.")
-                        continue
-                    modifications["end_date"] = aware_end_date
-                    break  # End the loop after processing a valid end date
-            except ValueError:
-                self.display_error_message("Invalid date format. Please use YYYY-MM-DD HH:MM.")
+            end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default="", show_default=False)
 
-        return modifications
+            # Allows blank input if allow_blank is True and the input is blank.
+            if allow_blank and end_date_str.strip() == "":
+                return None
+
+            try:
+                # Attempts to parse the input string into a datetime object.
+                naive_end_date = parse(end_date_str)
+                aware_end_date = make_aware(naive_end_date, get_default_timezone())
+            except ValueError:
+                # If the input cannot be parsed, display an error message.
+                self.display_error_message("Invalid date format. Please use YYYY-MM-DD HH:MM.")
+                continue
+
+            # Checks if the end date is before or equal to the start date.
+            if aware_end_date <= start_date:
+                # If the end date is not after the start date, display an error message.
+                self.display_error_message("End date must be after the start date. Please try again.")
+                continue
+
+            # Returns the valid end date.
+            return aware_end_date
