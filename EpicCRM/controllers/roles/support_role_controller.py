@@ -11,10 +11,6 @@ from crm.models import Client
 from crm.models import Contract
 
 from services.services_crm import ServicesCRM
-
-from controllers.models.client_controller import ClientController
-from controllers.models.contract_controller import ContractController
-from controllers.models.event_controller import EventController
 from views.roles.support_role_view_cli import SupportRoleViewCli
 
 
@@ -71,7 +67,7 @@ class SupportRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. in start() at support controller"
                     f"Expected options were between 1 and 6.",
-                    level = 'error')
+                    level='error')
                 self.view_cli.display_error_message("Invalid option selected. Please try again.")
                 self.start()
 
@@ -142,6 +138,7 @@ class SupportRoleController:
             self.view_cli.display_info_message("No customers currently available to display.")
 
         return clients
+
 # ================================== 2 - View all contracts.     =======================================================
 
     def show_all_contracts(self) -> None:
