@@ -6,6 +6,16 @@ from views.base_view_cli import BaseViewCli
 class MainViewCLI(BaseViewCli):
     @staticmethod
     def prompt_login():
+        """
+        Prompt the user to log in with their username and password.
+
+        This method clears the screen and displays a welcome message.
+        It then prompts the user to enter their username and password,
+        hiding the input for the password for security purposes.
+
+        Returns:
+            dict: A dictionary containing the entered username and password.
+        """
         click.clear()
         click.secho("Welcome to Epic Events CRM!", fg="blue", bold=True)
         click.secho("Please log in...", fg="blue", bold=True)
@@ -17,34 +27,21 @@ class MainViewCLI(BaseViewCli):
             "password": password
         }
 
-    def show_main_menu(self, collaborator):
-        click.secho(f"Welcome to CRM Epic Events {collaborator.username}.")
-
-        # Basic options for all collaborators
-        options = {
-            "view_contracts": "View all contracts",
-            "view_events": "View all events",
-            "view_clients": "View all clients"
-        }
-
-        # Add the option to manage collaborators iif the user has permission.
-        if collaborator.has_perm("crm.manage_collaborators"):
-            options = {"manage_collaborators": "Manage Collaborators", **options}
-
-        # Display the numbered options
-        for i, (code, option) in enumerate(options.items(), start=1):
-            click.secho(f"{i}. {option}", fg="green")
-
-        # Capture the user's choice
-        choice = self.get_collaborator_choice(len(options))
-
-        # Get the option code based in the choice
-        option_code = list(options.keys())[choice - 1]
-
-        return option_code
-
     @staticmethod
     def get_collaborator_choice(limit) -> int:
+        """
+        Prompt the user to choose an option within a specified limit.
+
+        This method prompts the user to choose an option by entering a number.
+        It ensures that the chosen option is within the range from 1 to the provided limit.
+
+        Args:
+            limit (int): The upper limit of the options.
+
+        Returns:
+            int: The chosen option.
+
+        """
         while True:
             choice = click.prompt("Please choose an option", type=int)
             if 1 <= choice <= limit:

@@ -22,19 +22,40 @@ class MainControllerCRM:
         self.view_cli = MainViewCLI()
 
     def authenticate_collaborator(self) -> Optional[Collaborator]:
+        """
+        Authenticate a collaborator using the provided username and password.
+
+        This method prompts the user to enter their username and password
+        through the `prompt_login` method. It then attempts to authenticate
+        the collaborator using the CRM services. If authentication is successful,
+        it displays a success message and returns the authenticated user.
+        If authentication fails due to validation error, it displays an error message
+        and returns None.
+
+        Returns:
+            Optional[Collaborator]: The authenticated collaborator if successful, else None.
+        """
+
         login_data = self.view_cli.prompt_login()
         try:
+            # Attempt to authenticate the collaborator
             user = self.crm_services.authenticate_collaborator(**login_data)
             self.view_cli.display_info_message("Logged in successfully!")
             return user
         except ValidationError as e:
+            # Display an error message if authentication fails due to validation error
             self.view_cli.display_error_message(f"Login failed: {e}")
             return None
 
-    def present_main_menu(self, user):
-        self.view_cli.show_main_menu(user)
-
     def start(self):
+        """
+        Start the application after authenticating the collaborator.
+
+        This method first authenticates the collaborator using the `authenticate_collaborator` method.
+        It then verifies that the collaborator object exists. If not, it returns.
+        Based on the role of the collaborator, it initializes the appropriate role-specific view CLI and controller,
+        and starts the corresponding controller.
+        """
         collaborator = self.authenticate_collaborator()
 
         # Verify that the collaborator objects exist.
