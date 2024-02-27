@@ -233,7 +233,7 @@ class SalesRoleController:
 
         # Displays the details of the client to be modified.
         self.view_cli.display_client_details(client)
-        modifications = self.view_cli.prompt_for_client_modification()
+        modifications = self.view_cli.get_data_for_client_modification()
 
         # Checks if no modifications were provided.
         if not modifications:
@@ -347,7 +347,7 @@ class SalesRoleController:
         # Displays the details of the event to be modified.
         self.view_cli.display_contract_details(contract)
 
-        modifications = self.view_cli.prompt_for_contract_modification()
+        modifications = self.view_cli.get_data_for_contract_modification()
 
         # Checks if no modifications were provided.
         if not modifications:
