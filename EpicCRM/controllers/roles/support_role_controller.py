@@ -405,7 +405,7 @@ class SupportRoleController:
         # Displays the details of the event to be modified.
         self.view_cli.display_event_details(event)
 
-        modifications = self.view_cli.prompt_for_event_modification()
+        modifications = self.view_cli.get_data_for_event_modification()
 
         # Checks if no modifications were provided.
         if not modifications:
