@@ -5,6 +5,7 @@ from django.db import DatabaseError
 from django.db.models.query import QuerySet
 from typing import Optional
 from sentry_sdk import capture_exception
+from sentry_sdk import capture_message
 from datetime import datetime
 
 from crm.models import Collaborator
@@ -31,46 +32,54 @@ class ServicesCRM:
                               email: str,
                               role_name: str,
                               employee_number: str) -> Collaborator:
+        try:
+            # Check if the username, email, or employee number is already in use.
+            if Collaborator.objects.filter(username=username).exists():
+                raise ValidationError(f"The username: {username} is already in use.")
+            if Collaborator.objects.filter(email=email).exists():
+                raise ValidationError(f"The email: {email} is already in use.")
+            if Collaborator.objects.filter(employee_number=employee_number).exists():
+                raise ValidationError(f"The employee number: {employee_number} is already in use.")
 
-        # Check if the username is already in use.
-        if Collaborator.objects.filter(username=username).exists():
-            raise ValidationError(f"The username: {username} is already in use.")
+            # Get or create the role
+            role, created = Role.objects.get_or_create(name=role_name)
 
-        # Check if email is already in use.
-        if Collaborator.objects.filter(email=email).exists():
-            raise ValidationError(f"The email: {email} is already in use.")
+            # Create the Collaborator instance
+            collaborator = Collaborator(first_name=first_name,
+                                        last_name=last_name,
+                                        username=username,
+                                        email=email,
+                                        role=role,
+                                        employee_number=employee_number)
 
-        # Check if the employee number is already in user
-        if Collaborator.objects.filter(employee_number=employee_number).exists():
-            raise ValidationError(f"The employee number: {employee_number} is already in use.")
-
-        # Get or create the role
-        role, created = Role.objects.get_or_create(name=role_name)
-
-        # Create the Collaborator instance
-        collaborator = Collaborator(first_name=first_name,
-                                    last_name=last_name,
-                                    username=username,
-                                    email=email,
-                                    role=role,
-                                    employee_number=employee_number)
-
-        collaborator.set_password(password)
-
-        # Add the collaborator to the corresponding group.
-        role_to_group = {
-            'management': 'management_team',
-            'sales': 'sales_team',
-            'support': 'support_team',
-        }
-        group_name = role_to_group.get(role_name)
-        if group_name:
-            group, group_created = Group.objects.get_or_create(name=group_name)
-            collaborator.save()
-            collaborator.groups.add(group)
+            collaborator.set_password(password)
+            collaborator.full_clean()  # This will run model field validations
             collaborator.save()
 
-        return collaborator
+            capture_message(f"Collaborator {username} has been registered.")
+
+            # Add the collaborator to the corresponding group.
+            role_to_group = {
+                'management': 'management_team',
+                'sales': 'sales_team',
+                'support': 'support_team',
+            }
+            group_name = role_to_group.get(role_name)
+            if group_name:
+                group, group_created = Group.objects.get_or_create(name=group_name)
+                collaborator.groups.add(group)
+                collaborator.save()
+
+            return collaborator
+        except ValidationError as e:
+            capture_exception(e)
+            raise ValidationError(f"Validation error: {e}") from e
+        except DatabaseError as e:
+            capture_exception(e)
+            raise DatabaseError("Problem with database access") from e
+        except Exception as e:
+            capture_exception(e)
+            raise Exception("Unexpected error creating collaborator") from e
 
     @staticmethod
     def modify_collaborator(collaborator: Collaborator, modifications: dict) -> Collaborator:
@@ -114,6 +123,7 @@ class ServicesCRM:
                     collaborator.groups.add(new_group)
 
             collaborator.save()
+            capture_message(f"The Collaborator {collaborator.username} has been modified.")
 
         except ValidationError as e:
             capture_exception(e)
@@ -231,7 +241,8 @@ class ServicesCRM:
             capture_exception(e)
             raise Exception("Unexpected error creating client") from e
 
-    def get_clients_for_collaborator(self, collaborator_id: int) -> QuerySet[Event]:
+    @staticmethod
+    def get_clients_for_collaborator(collaborator_id: int) -> QuerySet[Event]:
         """
         Retrieves clients associated with a specific collaborator from the database.
 
@@ -255,7 +266,8 @@ class ServicesCRM:
             capture_exception(e)
             raise Exception("Unexpected error retrieving clients") from e
 
-    def get_all_clients(self) -> QuerySet[Client]:
+    @staticmethod
+    def get_all_clients() -> QuerySet[Client]:
         """
         Retrieve all clients from the database.
 
@@ -344,6 +356,10 @@ class ServicesCRM:
             )
             # Save the contract to the database
             contract.save()
+
+            if status == 'signed':
+                capture_message(f"Contract signed with client {client.id} with sales contact {sales_contact.id}")
+
             return contract
         except ValidationError as e:
             capture_exception(e)
@@ -593,7 +609,8 @@ class ServicesCRM:
             capture_exception(e)
             raise Exception("Unexpected error occurred during the support contact assignment") from e
 
-    def get_all_events(self) -> QuerySet[Event]:
+    @staticmethod
+    def get_all_events() -> QuerySet[Event]:
         try:
             return Event.objects.all()
         except DatabaseError as e:
@@ -605,7 +622,8 @@ class ServicesCRM:
             print(f"Error retrieving events: {e}")
             return Event.objects.none()
 
-    def get_events_for_collaborator(self, collaborator_id: int) -> QuerySet[Event]:
+    @staticmethod
+    def get_events_for_collaborator(collaborator_id: int) -> QuerySet[Event]:
         """
         Retrieves all events attributed to a specific collaborator.
 
@@ -624,7 +642,8 @@ class ServicesCRM:
             capture_exception(e)
             print(f"Error retrieving events for collaborator {collaborator_id}: {e}")
 
-    def modify_event_by_id(self, event_id: int, **kwargs) -> Event | None:
+    @staticmethod
+    def modify_event_by_id(event_id: int, **kwargs) -> Event | None:
         """
         Modifies an existing event with the provided data.
 
@@ -698,7 +717,8 @@ class ServicesCRM:
             # Handle unexpected errors
             raise Exception(f"Unexpected error occurred while modifying the event: {e}")
 
-    def get_event_by_id(self, event_id: int) -> Event | None:
+    @staticmethod
+    def get_event_by_id(event_id: int) -> Event | None:
         """
         Retrieve an event by ID.
 
