@@ -6,7 +6,7 @@ django.setup()
 
 from django.contrib.auth.models import Group, Permission
 from django.contrib.auth.hashers import make_password
-from crm.models import Collaborator, Role
+from crm.models import Collaborator, Role, Client
 
 # Create groups
 group_names = ['management_team', 'sales_team', 'support_team']
@@ -59,8 +59,51 @@ def create_collaborator(first_name, last_name, username, email, role_name, emplo
 
 
 # Create users for each role and add them to respective groups
-create_collaborator("Thomas", "Girard", "thomasg", "thomas.girard@example.net", "management", "9473", "Manage123*",
+create_collaborator("Thomas", "Girard", "thomasg", "thomas.girard@example.net",
+                    "management", "9473", "Manage123*",
                     "management_team")
-create_collaborator("Alex", "Johnson", "alexj", "alex.johnson@example.net", "sales", "9474", "Sales123*", "sales_team")
-create_collaborator("Emma", "Smith", "emmas", "emma.smith@example.net", "support", "9475", "Support123*",
+create_collaborator("Alex", "Johnson", "alexj", "alex.johnson@example.net",
+                    "sales", "9474", "Sales123*", "sales_team")
+create_collaborator("Emma", "Smith", "emmas", "emma.smith@example.net",
+                    "support", "9475", "Support123*",
                     "support_team")
+
+
+# Function to find sales contact by username
+def find_sales_contact(username):
+    try:
+        return Collaborator.objects.get(username=username)
+    except Collaborator.DoesNotExist:
+        print(f"No sales contact found with username: {username}")
+        return None
+
+
+# Function to create a client
+def create_client(full_name, email, phone, company_name, sales_contact_username):
+    sales_contact = find_sales_contact(sales_contact_username)
+    if sales_contact is None:
+        return
+
+    client = Client(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        company_name=company_name,
+        sales_contact=sales_contact
+    )
+    client.save()
+    print(f"Client '{full_name}' created successfully.")
+
+
+# Create clients and assign 'alexj' as their sales contact
+clients_data = [
+    {"full_name": "Client One", "email": "client.one@example.com", "phone": "1234567890", "company_name": "Company One",
+     "sales_contact_username": "alexj"},
+    {"full_name": "Client Two", "email": "client.two@example.com", "phone": "0987654321", "company_name": "Company Two",
+     "sales_contact_username": "alexj"},
+    {"full_name": "Client Three", "email": "client.three@example.com", "phone": "1122334455",
+     "company_name": "Company Three", "sales_contact_username": "alexj"}
+]
+
+for client_data in clients_data:
+    create_client(**client_data)
