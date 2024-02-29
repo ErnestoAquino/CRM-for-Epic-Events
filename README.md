@@ -111,7 +111,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 Rename the file `secrets_example.json` to `secrets.json`:
 
 ```bash
-mv secrets_example.json secrets.json
+mv EpicCRM/secrets_example.json EpicCRM/secrets.json
 ```
 
 and add your passwords:
