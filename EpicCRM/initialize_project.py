@@ -1,6 +1,7 @@
 # Script to initialize groups, assign permissions, and create the first user in Django
 
 import django
+
 django.setup()
 
 from django.contrib.auth.models import Group, Permission
@@ -33,24 +34,33 @@ for group_name, perm_codenames in permissions.items():
         group.permissions.add(perm)
     print(f"Permissions successfully assigned to the group '{group_name}'.")
 
-# Create the first user
-role_name = "management"
-role, created = Role.objects.get_or_create(name=role_name)
-if created:
-    print(f"Role '{role_name}' created successfully.")
-else:
-    print(f"The role '{role_name}' already existed.")
 
-collaborator = Collaborator(
-    first_name="Thomas",
-    last_name="Girard",
-    username="thomasg",
-    email="thomas.girard@example.net",
-    role=role,
-    employee_number="9473",
-    password=make_password("Manage123*")
-)
+# Function to create a collaborator and add to a group
+def create_collaborator(first_name, last_name, username, email, role_name, employee_number, password, group_name):
+    role, created = Role.objects.get_or_create(name=role_name)
+    if created:
+        print(f"Role '{role_name}' created successfully.")
+    else:
+        print(f"The role '{role_name}' already existed.")
 
-collaborator.save()
-groups['management_team'].user_set.add(collaborator)
-print("Collaborator 'Thomas Girard' created and added to the 'management_team' group successfully.")
+    collaborator = Collaborator(
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        email=email,
+        role=role,
+        employee_number=employee_number,
+        password=make_password(password)
+    )
+
+    collaborator.save()
+    groups[group_name].user_set.add(collaborator)
+    print(f"Collaborator '{first_name} {last_name}' created and added to the '{group_name}' group successfully.")
+
+
+# Create users for each role and add them to respective groups
+create_collaborator("Thomas", "Girard", "thomasg", "thomas.girard@example.net", "management", "9473", "Manage123*",
+                    "management_team")
+create_collaborator("Alex", "Johnson", "alexj", "alex.johnson@example.net", "sales", "9474", "Sales123*", "sales_team")
+create_collaborator("Emma", "Smith", "emmas", "emma.smith@example.net", "support", "9475", "Support123*",
+                    "support_team")
