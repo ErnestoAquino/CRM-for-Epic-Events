@@ -393,7 +393,6 @@ class ManagementRoleController:
         """
         self.view_cli.clear_screen()
         self.view_cli.display_collaborator_details(collaborator)
-        self.view_cli.display_warning_message(f"You have selected: {self.collaborator.get_full_name()} for deletion.")
         self.view_cli.display_warning_message("Please note that this action is irreversible.")
 
         # Confirm with the user if they want to proceed with deletion

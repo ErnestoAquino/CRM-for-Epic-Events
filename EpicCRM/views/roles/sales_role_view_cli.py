@@ -30,31 +30,6 @@ class SalesRoleViewCli(BaseViewCli):
     MENU_LIMIT = len(MENU_OPTIONS)
     VALID_STATUS_CHOICES = ["signed", "not_signed"]
 
-    # EMAIL_REGEX Explanation:
-    # This regular expression is used to validate email addresses based on specific criteria:
-    # \b - Word boundary to ensure the pattern is matched at the beginning or end of a word.
-    # [A-Z|a-z|0-9|._%+-]+ - The local part of the email address. It can include:
-    #   * Uppercase and lowercase letters (A-Z, a-z)
-    #   * Digits (0-9)
-    #   * Special characters: dots (.), underscores (_), percent signs (%), plus signs (+), and hyphens (-)
-    #   This part must appear at least once (+).
-    # @ - The @ symbol, which is mandatory in email addresses to separate the local part from the domain part.
-    # [A-Z|a-z|0-9|.-]+ - The domain part of the email address. It can include:
-    #   * Uppercase and lowercase letters (A-Z, a-z)
-    #   * Digits (0-9)
-    #   * Special characters: dots (.) and hyphens (-)
-    #   This part must appear at least once (+).
-    # \. - A literal dot (.) to separate the domain from the top-level domain (TLD).
-    # [A-Z|a-z|0-9]{2,10} - The top-level domain (TLD). It can include:
-    #   * Uppercase and lowercase letters (A-Z, a-z)
-    #   * Digits (0-9)
-    #   This part must be between 2 and 10 characters long ({2,10}).
-    # \b - Another word boundary to ensure the pattern is matched at the beginning or end of a word.
-    # This regex ensures that the email addresses match common patterns and standards, but it may not cover all
-    # valid email formats as defined by the RFC standard.
-
-    EMAIL_REGEX = r'\b[A-Z|a-z|0-9|._%+-]+@[A-Z|a-z|0-9|.-]+\.[A-Z|a-z|0-9]{2,10}\b'
-
     def show_main_menu(self, collaborator_name: str):
         """
         Display the main menu to the user.
@@ -304,7 +279,7 @@ class SalesRoleViewCli(BaseViewCli):
 
         # Loop to ensure valid input for the start date.
         while True:
-            start_date_str = click.prompt("New start date (YYYY-MM-DD HH:MM)", default="", show_default=False)
+            start_date_str = click.prompt("Start date (YYYY-MM-DD HH:MM)", default="", show_default=False)
             try:
 
                 # Attempts to parse the input string into a datetime object.
@@ -340,7 +315,7 @@ class SalesRoleViewCli(BaseViewCli):
 
         # Loop to ensure valid input for the end date.
         while True:
-            end_date_str = click.prompt("New end date (YYYY-MM-DD HH:MM)", default="", show_default=False)
+            end_date_str = click.prompt("End date (YYYY-MM-DD HH:MM)", default="", show_default=False)
             try:
 
                 # Attempts to parse the input string into a datetime object.
