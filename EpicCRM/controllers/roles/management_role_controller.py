@@ -96,7 +96,7 @@ class ManagementRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. in start() - management controller."
                     f"Expected options were between 1 and {len(self.MAIN_MENU_OPTIONS)}.",
-                    level = 'error')
+                    level='error')
                 self.view_cli.display_error_message("Invalid option selected. Please try again.")
 
         # Asks the collaborator if they want to continue using the system.
@@ -155,7 +155,7 @@ class ManagementRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. in manage_collaborators() - management controller."
                     f"Expected options were between 1 and {len(self.SUB_MENU_MANAGE_COLLABORATORS)}.",
-                    level = 'error')
+                    level='error')
                 self.view_cli.display_info_message("Invalid option selected. Please try again.")
                 return
 
@@ -196,8 +196,9 @@ class ManagementRoleController:
                 # If the user chooses not to continue, exit the loop.
                 if not continue_operation:
                     break
+            except DatabaseError:
+                self.view_cli.display_error_message("I encountered a problem with the database. Please try again.")
             except Exception as e:
-                # If an unexpected error occurs, display the error message and exit the loop.
                 self.view_cli.display_error_message(str(e))
                 break
 
@@ -455,7 +456,7 @@ class ManagementRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. in manage_contract() - management controller."
                     f"Expected options were between 1 and {len(self.SUB_MENU_MANAGE_CONTRACTS)}.",
-                    level = 'error')
+                    level='error')
                 self.view_cli.display_info_message("Invalid option selected. Please try again.")
                 return
 
@@ -748,7 +749,7 @@ class ManagementRoleController:
                 capture_message(
                     f"Invalid menu option selected: {choice}. "
                     f"Expected options were between 1 and {len(self.SUB_MENU_EVENTS)}.",
-                    level = 'error')
+                    level='error')
                 return
 
     def show_events_with_support_contact_assigned(self) -> None:
