@@ -87,7 +87,10 @@ DATABASES = {
         'USER': 'epic_crm_user',
         'PASSWORD': secrets['DATABASE_PASSWORD'],
         'HOST': 'localhost',
-        'PORT': ''
+        'PORT': '',
+        'TEST': {
+            'NAME': 'my_test_database'
+        }
     }
 }
 

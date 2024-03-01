@@ -3,3 +3,4 @@ env/
 __pycache__/
 EpicCRM/secrets.json
 .DS_Store
+.coverage
